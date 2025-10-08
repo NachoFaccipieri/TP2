@@ -9,7 +9,7 @@ import json
 detector = MTCNN()
 embedder = FaceNet()
 
-# --- Función para obtener embedding de una imagen ---
+# Función para obtener embedding de una imagen
 def get_embedding(img):
     # Convertir a RGB si no lo está
     if img.mode != 'RGB':
@@ -26,14 +26,14 @@ def get_embedding(img):
     # Redimensionar a 160x160 para FaceNet
     face = Image.fromarray(face).resize((160, 160))
     face = np.asarray(face)
-    face = np.expand_dims(face, axis=0)  # batch de 1
+    face = np.expand_dims(face, axis=0) 
 
     embedding = embedder.embeddings(face)[0]
-    # Normalización L2 (opcional pero recomendable)
+    # Normalización L2
     embedding = embedding / np.linalg.norm(embedding)
     return embedding
 
-# --- 1. Capturar un frame de la cámara ---
+#Capturar un frame de la cámara
 reader = imageio.get_reader("<video0>")  # cámara en Linux
 frame = reader.get_data(0)               # tomar primer frame
 reader.close()
@@ -41,17 +41,17 @@ reader.close()
 # Convertir a PIL Image
 frame_img = Image.fromarray(frame)
 
-# --- 2. Obtener embedding del frame ---
+#Obtener embedding del frame
 frame_embedding = get_embedding(frame_img)
 if frame_embedding is None:
-    print("❌ No se detectó rostro en el frame de la cámara")
+    print(" No se detectó rostro en el frame de la cámara")
     exit()
 
-# --- 3. Guardar embedding en archivo ---
+#Guardar embedding en archivo
 output_file = "embeddings.txt"
 embedding_list = frame_embedding.tolist()
 
 with open(output_file, "a") as f:
     f.write(json.dumps(embedding_list) + "\n")
 
-print(f"✅ Embedding guardado en {output_file}")
+print(f"Embedding guardado en {output_file}")
