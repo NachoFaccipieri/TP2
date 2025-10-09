@@ -19,12 +19,44 @@ document.getElementById("deny").addEventListener("click", () => {
   resetUI();
 });
 
+document.getElementById("register-face").addEventListener("click", registrarNuevoRostro);
+document.getElementById("ring-bell").addEventListener("click", tocarTimbre);
+
+function registrarNuevoRostro() {
+  const nombre = prompt("Ingresá el nombre de la persona:");
+  if (!nombre) return;
+  fetch('http://localhost:5000/registrar-rostro', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre })
+  })
+    .then(res => res.json())
+    .then(data => alert(data.mensaje))
+    .catch(err => {
+      alert("Error: " + err);
+      console.log(err);
+    });
+}
+
+function tocarTimbre() {
+  fetch('http://localhost:5000/tocar-timbre', { method: 'POST' })
+    .then(res => res.json())
+    .then(data => {
+      if (data.coincidencia) {
+        document.getElementById("status").innerHTML = `<p>✅ Coincidencia encontrada: ${data.nombre}</p>`;
+      } else {
+        document.getElementById("status").innerHTML = `<p>❌ No se encontró coincidencia</p>`;
+      }
+      alert(data.mensaje);
+    })
+    .catch(err => {
+      alert("Error: " + err);
+      console.log(err);
+    });
+}
+
 function resetUI() {
   document.getElementById("status").innerHTML = "<p>Esperando evento...</p>";
   document.getElementById("person-info").classList.add("hidden");
 }
 
-// --- Ejemplo de simulación automática ---
-setTimeout(() => {
-  simulateEvent("Juan Pérez", 97);
-}, 3000);
