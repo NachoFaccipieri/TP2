@@ -58,7 +58,7 @@ def registrar_rostro():
     
     #3: Guardar en MongoDB
     embedding_list = frame_embedding.tolist()
-    collection.insert_one({"embedding": embedding_list, "nombre": nombre or "Desconocido"})
+    collection.insert_one({"nombre": nombre or "Desconocido", "embedding": embedding_list})
     return jsonify({"mensaje": f"✅ Embedding guardado en MongoDB para {nombre or 'Desconocido'}"})
 
 @app.route('/tocar-timbre', methods=['POST'])
