@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: regRostro",
+            "type": "python",
+            "request": "launch",
+            "module": "server/regRostro",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: mqtt_bridge",
+            "type": "python",
+            "request": "launch",
+            "module": "server/mqtt_bridge",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}

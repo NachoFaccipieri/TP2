@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FaceID - Puerta</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Control de Acceso</h1>
+    <div id="status" class="card">
+      <p>Esperando evento...</p>
+    </div>
+    <button id="register-face" class="btn" style="margin-top:15px;">Registrar nuevo rostro</button>
+    <button id="ring-bell" class="btn" style="margin-top:15px;">Tocar timbre</button>
+    <div id="person-info" class="card hidden">
+      <h2>Resultado</h2>
+      <p id="name"></p>
+      <p id="confidence"></p>
+      <button id="allow" class="btn allow">Permitir acceso</button>
+      <button id="deny" class="btn deny">Denegar acceso</button>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
