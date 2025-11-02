@@ -45,15 +45,15 @@ if not stored_embeddings:
     print("No hay rostros registrados en la base de datos.")
     exit()
 
-<<<<<<< HEAD
+
 #Capturar un frame de la cámara
 reader = imageio.get_reader("<video0>")  # cámara en Linux
 frame = reader.get_data(0)               # tomar primer frame
-=======
+
 # --- 2. Capturar un frame de la cámara ---
 reader = imageio.get_reader("<video0>", format="v4l2")
 frame = reader.get_next_data()
->>>>>>> 673570a (Agregada la carpeta completa [nombre de la carpeta])
+
 reader.close()
 
 

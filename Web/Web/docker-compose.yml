@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+
+  web:
+    image: nginx:alpine
+    container_name: mi-servidor-web
+    ports:
+      - "8080:80"
+    volumes:
+      - /home/grupoa3b/tensorflow_project/scriptsReconocimiento/TP2/Web/Web/public:/usr/share/nginx/html
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

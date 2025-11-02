@@ -1,102 +1,111 @@
-from flask import Flask, jsonify, request
-from pymongo import MongoClient
-import imageio
+# import imageio  <--- ELIMINADO
+import cv2      # <--- AGREGADO: Para la cámara
+import sys      # <--- AGREGADO: Para salir limpiamente
 from mtcnn import MTCNN
 from keras_facenet import FaceNet
 import numpy as np
 from PIL import Image
-from flask_cors import CORS
+import json
 
-app = Flask(__name__)
-CORS(app)
-
-# Conexión a MongoDB (ajustá el host si usás Docker)
-client = MongoClient('mongodb://localhost:27017/')
-db = client['faceid']
-collection = db['embeddings']
-
-# Inicializar detector y modelo de embeddings
-detector = MTCNN()
-embedder = FaceNet()
-
+# --- 0. Cargar modelos ---
+print("Cargando MTCNN y FaceNet (TensorFlow)...")
+try:
+    detector = MTCNN()
+    embedder = FaceNet()
+    print("Modelos cargados.")
+except Exception as e:
+    print(f"Error al cargar modelos de TensorFlow: {e}")
+    print("Esto probablemente sea un error de falta de memoria (RAM).")
+    sys.exit()
+print("Termino detector y embedder")
+# --- Función para obtener embedding de una imagen ---
 def get_embedding(img):
     if img.mode != 'RGB':
         img = img.convert('RGB')
-    #Convertir a NumpyArray
     img_array = np.asarray(img)
+
+    print("Detectando rostro...")
     detections = detector.detect_faces(img_array)
+
     if len(detections) == 0:
         return None
-    
-    #Tomar el primer rostro detectado
+
+    # Tomar el primer rostro detectado
     x, y, w, h = detections[0]['box']
+    x, y = abs(x), abs(y) # Asegurar que no sean negativos
     face = img_array[y:y+h, x:x+w]
+
+    print("Generando embedding...")
     face = Image.fromarray(face).resize((160, 160))
     face = np.asarray(face)
     face = np.expand_dims(face, axis=0)
+    embedding = embedder.embeddings(face)
+    return embedding[0]
 
-    embedding = embedder.embeddings(face)[0]
-    embedding = embedding / np.linalg.norm(embedding)
-    return embedding
+# --- Función para leer embeddings guardados ---
+def load_embeddings(file_path="embeddings.txt"):
+    embeddings = []
+    try:
+        with open(file_path, "r") as f:
+            for line in f:
+                vec = json.loads(line.strip())
+                embeddings.append(np.array(vec))
+    except FileNotFoundError:
+        print("⚠️ No hay archivo de embeddings todavía.")
+    return embeddings
 
-@app.route('/registrar-rostro', methods=['POST'])
-def registrar_rostro():
-    data = request.get_json()
-    nombre = data.get("nombre") if data else None
+# --- 1. Cargar embeddings de la base ---
+print("Cargando base de datos de embeddings...")
+stored_embeddings = load_embeddings("embeddings.txt")
+if not stored_embeddings:
+    print("No hay rostros registrados en la base de datos.")
+    sys.exit() # Usamos sys.exit
 
-    reader = imageio.get_reader("<video0>")
-    frame = reader.get_data(0)
-    reader.close()
+# --- 2. Capturar un frame de la cámara (BLOQUE CORREGIDO CON OPENCV) ---
+print("📸 Capturando foto de la cámara...")
+cap = cv2.VideoCapture(0)  # El '0' es /dev/video0
 
-    #Convertir a PIL Image
-    frame_img = Image.fromarray(frame)
+if not cap.isOpened():
+    print("Error fatal: No se pudo abrir la cámara con OpenCV.")
+    sys.exit()
 
-    #2: Obtener embedding del frame
-    frame_embedding = get_embedding(frame_img)
-    if frame_embedding is None:
-        return jsonify({"mensaje": "❌ No se detectó rostro en el frame de la cámara"}), 400
-    
-    #3: Guardar en MongoDB
-    embedding_list = frame_embedding.tolist()
-    collection.insert_one({"nombre": nombre or "Desconocido", "embedding": embedding_list})
-    return jsonify({"mensaje": f"✅ Embedding guardado en MongoDB para {nombre or 'Desconocido'}"})
+# Leer un solo frame
+ret, frame = cap.read()
+# Soltar la cámara inmediatamente
+cap.release()
 
-@app.route('/tocar-timbre', methods=['POST'])
-def tocar_timbre():
-    # 1. Capturar frame de la cámara
-    reader = imageio.get_reader("<video0>")
-    frame = reader.get_data(0)
-    reader.close()
-    frame_img = Image.fromarray(frame)
+if not ret:
+    print("Error: No se pudo capturar el frame con OpenCV.")
+    sys.exit()
 
-    # 2. Obtener embedding del frame
-    frame_embedding = get_embedding(frame_img)
-    if frame_embedding is None:
-        return jsonify({"coincidencia": False, "mensaje": "❌ No se detectó rostro en el frame de la cámara"}), 400
+print("¡Foto capturada!")
 
-    # 3. Leer embeddings guardados desde MongoDB
-    embeddings = list(collection.find({}))
-    if not embeddings:
-        return jsonify({"coincidencia": False, "mensaje": "No hay rostros registrados en la base de datos."}), 400
+# --- Corrección de color CRUCIAL ---
+# OpenCV lee en BGR, pero PIL/FaceNet esperan RGB
+frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    # 4. Comparar con todos los embeddings guardados
-    distancias = [np.linalg.norm(frame_embedding - np.array(emb['embedding'])) for emb in embeddings]
-    min_dist = min(distancias)
-    idx = distancias.index(min_dist)
+# Convertir a imagen PIL (el resto de tu script no cambia)
+frame_img = Image.fromarray(frame_rgb)
+# -----------------------------------------------------------------
 
-    # Umbral típico ~1.0 (ajustable)
-    if min_dist < 1.0:
-        nombre = embeddings[idx].get("nombre", "Desconocido")
-        return jsonify({
-            "coincidencia": True,
-            "mensaje": f"✅ Persona reconocida: {nombre} (distancia: {min_dist:.4f})",
-            "nombre": nombre
-        })
-    else:
-        return jsonify({
-            "coincidencia": False,
-            "mensaje": "❌ No coincide con ninguna persona registrada"
-        })
+# --- 3. Procesar la imagen capturada ---
+frame_embedding = get_embedding(frame_img)
+if frame_embedding is None:
+    print("No se detectó rostro en el frame de la cámara")
+    sys.exit()
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+# --- 4. Comparar con todos los embeddings guardados ---
+print("Comparando rostro capturado con la base de datos...")
+distancias = [np.linalg.norm(frame_embedding - emb) for emb in stored_embeddings]
+min_dist = min(distancias)
+idx = distancias.index(min_dist)
+
+print("---------------------------------")
+print(f"Distancia mínima encontrada: {min_dist:.4f} (vs rostro #{idx+1})")
+
+# Umbral ajustable
+if min_dist < 1.0:
+    print("✅ Persona reconocida en la base de datos")
+else:
+    print("❌ No coincide con ninguna persona registrada")
+print("---------------------------------")

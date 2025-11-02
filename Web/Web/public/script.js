@@ -25,7 +25,10 @@ document.getElementById("ring-bell").addEventListener("click", tocarTimbre);
 function registrarNuevoRostro() {
   const nombre = prompt("Ingresá el nombre de la persona:");
   if (!nombre) return;
-  fetch('http://localhost:5000/registrar-rostro', {
+
+  // --- CAMBIO AQUÍ ---
+  // Apunta a la IP de la Pi, no a 'localhost'
+  fetch('http://192.168.1.84:5000/registrar-rostro', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nombre })
@@ -39,7 +42,9 @@ function registrarNuevoRostro() {
 }
 
 function tocarTimbre() {
-  fetch('http://localhost:5000/tocar-timbre', { method: 'POST' })
+  // --- CAMBIO AQUÍ ---
+  // Apunta a la IP de la Pi, no a 'localhost'
+  fetch('http://192.168.1.84:5000/tocar-timbre', { method: 'POST' })
     .then(res => res.json())
     .then(data => {
       if (data.coincidencia) {
@@ -59,4 +64,3 @@ function resetUI() {
   document.getElementById("status").innerHTML = "<p>Esperando evento...</p>";
   document.getElementById("person-info").classList.add("hidden");
 }
-

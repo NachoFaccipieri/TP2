@@ -1,14 +1,11 @@
 version: "3.8"
 
 services:
-  backend:
-    build:
-      context: ./server
-    container_name: faceid-backend
-    # importante: usar la red del host para acceder a mosquitto en localhost
-    network_mode: "host"
-    restart: unless-stopped
+
+  web:
+    image: nginx:alpine
+    container_name: mi-servidor
+    ports:
+      - "8080:80"
     volumes:
-      - ./server:/app
-    environment:
-      - FLASK_ENV=production
+      - /home/grupoa3b/tensorflow_project/scriptsReconocimiento/TP2/Web/WorspaceCopilot/raspberry-faceid-web/public:/usr/share/nginx/html
