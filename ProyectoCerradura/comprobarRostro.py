@@ -2,12 +2,12 @@ import os
 # Ajustes para Pi con poca RAM: limitar hilos y reducir logs de TF
 # Deben establecerse antes de importar TensorFlow/keras para que tengan efecto
 # Activar poniendo RPI_LOW_RAM=1 en el entorno (por defecto activado)
-if os.environ.get('RPI_LOW_RAM', '1') == '1':
-    os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '2')
-    os.environ.setdefault('OMP_NUM_THREADS', '1')
-    os.environ.setdefault('MKL_NUM_THREADS', '1')
-    os.environ.setdefault('INTRA_OP_NUM_THREADS', '1')
-    os.environ.setdefault('INTER_OP_NUM_THREADS', '1')
+#if os.environ.get('RPI_LOW_RAM', '1') == '1':
+#    os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '2')
+#    os.environ.setdefault('OMP_NUM_THREADS', '1')
+#    os.environ.setdefault('MKL_NUM_THREADS', '1')
+#    os.environ.setdefault('INTRA_OP_NUM_THREADS', '1')
+#    os.environ.setdefault('INTER_OP_NUM_THREADS', '1')
 
 import cv2      # <--- Para la cámara
 import sys      # <--- Para salir limpiamente
