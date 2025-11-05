@@ -2,7 +2,7 @@
 // Conecta por defecto al broker en tu máquina local (WebSocket puerto 9001).
 // Cambiá la IP si tu PC tiene otra dirección.
 
-const BROKER_WS = 'ws://192.168.100.7:9001'; // usar la IP de tu PC con mosquitto+websockets
+const BROKER_WS = 'ws://192.168.0.6:9001'; // usar la IP de tu PC con mosquitto+websockets
 const TOPIC_REGISTRO = 'cerradura/registro';
 const TOPIC_TIMBRE = 'cerradura/timbre';
 const TOPIC_RESPUESTA = 'cerradura/persona';

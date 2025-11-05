@@ -20,7 +20,7 @@ import time
 import random
 import paho.mqtt.client as mqtt
 
-BROKER = os.environ.get('MQTT_BROKER', '192.168.100.7')
+BROKER = os.environ.get('MQTT_BROKER', '192.168.0.6')
 PORT = int(os.environ.get('MQTT_PORT', '1883'))
 TOPIC_REG = 'cerradura/registro'
 TOPIC_TIM = 'cerradura/timbre'

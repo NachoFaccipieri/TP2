@@ -119,8 +119,19 @@ function tocarTimbre() {
 }
 
 // Eventos botones
-document.getElementById('allow').addEventListener('click', () => { alert('✅ Acceso permitido'); resetUI(); });
-document.getElementById('deny').addEventListener('click', () => { alert('❌ Acceso denegado'); resetUI(); });
+// Cuando haya una persona en pantalla, estos botones publican la confirmación a la Raspberry
+document.getElementById('allow').addEventListener('click', () => {
+  if (!client || !client.connected) { alert('No conectado al broker MQTT'); return; }
+  client.publish('cerradura/confirmacion', JSON.stringify({ permitir: true }));
+  setStatus('✅ Enviado: permitir acceso');
+  PERSON_INFO.classList.add('hidden');
+});
+document.getElementById('deny').addEventListener('click', () => {
+  if (!client || !client.connected) { alert('No conectado al broker MQTT'); return; }
+  client.publish('cerradura/confirmacion', JSON.stringify({ permitir: false }));
+  setStatus('❌ Enviado: denegar acceso');
+  PERSON_INFO.classList.add('hidden');
+});
 document.getElementById('register-face').addEventListener('click', registrarNuevoRostro);
 document.getElementById('ring-bell').addEventListener('click', tocarTimbre);
 
