@@ -380,6 +380,14 @@ def keyboard_watcher(client):
 
 def main():
     client = mqtt.Client()
+    # Soporte opcional de credenciales MQTT si el broker requiere autenticación
+    MQTT_USER = os.environ.get('MQTT_USER')
+    MQTT_PASS = os.environ.get('MQTT_PASS')
+    if MQTT_USER:
+        try:
+            client.username_pw_set(MQTT_USER, MQTT_PASS)
+        except Exception as e:
+            print('Error al establecer credenciales MQTT:', e)
     client.on_connect = on_connect
     client.on_message = on_message
 
