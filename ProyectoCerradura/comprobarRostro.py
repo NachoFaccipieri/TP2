@@ -62,8 +62,27 @@ TOPIC_STATUS = os.environ.get('TOPIC_STATUS', 'cerradura/status')
 TOPIC_CONFIRM = os.environ.get('TOPIC_CONFIRM', 'cerradura/confirmacion')
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-EMBED_FILE = os.path.join(APP_ROOT, 'embeddings.txt')
-NAMES_FILE = os.path.join(APP_ROOT, 'names.txt')
+# Permitir personalizar la ubicación de los ficheros mediante variables de entorno
+EMBED_FILE = os.environ.get('EMBED_FILE', os.path.join(APP_ROOT, 'embeddings.txt'))
+NAMES_FILE = os.environ.get('NAMES_FILE', os.path.join(APP_ROOT, 'names.txt'))
+
+# Asegurarse de que la carpeta destino exista y que los ficheros estén creados
+try:
+    embed_dir = os.path.dirname(EMBED_FILE) or APP_ROOT
+    names_dir = os.path.dirname(NAMES_FILE) or APP_ROOT
+    os.makedirs(embed_dir, exist_ok=True)
+    os.makedirs(names_dir, exist_ok=True)
+    # crear archivos vacíos si no existen
+    open(EMBED_FILE, 'a', encoding='utf-8').close()
+    open(NAMES_FILE, 'a', encoding='utf-8').close()
+    # intentar ajustar permisos razonables (puede fallar en Windows)
+    try:
+        os.chmod(EMBED_FILE, 0o664)
+        os.chmod(NAMES_FILE, 0o664)
+    except Exception:
+        pass
+except Exception as e:
+    print('Advertencia: no se pudo crear archivos de embeddings/nombres:', e)
 
 
 print("Cargando MTCNN y FaceNet (TensorFlow)...")
