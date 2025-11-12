@@ -51,14 +51,12 @@ function onMessage(topic, payload) {
 
 function connectMqtt() {
   const host = location.hostname || 'localhost';
-  // Intentar primero conectar a través de nginx proxy en /mqtt (misma origen).
-  // Esto permite usar TLS en nginx y no exponer directamente el puerto 9001.
+  // Conectar directamente al broker MQTT WebSocket (puerto 9001 por defecto)
   const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  const originPathUrl = `${protocol}://${host}${location.port ? ':' + location.port : ''}/mqtt`;
-  const fallbackPort = location.protocol === 'https:' ? 8083 : 9001;
-  const fallbackUrl = `${protocol}://${host}:${fallbackPort}`;
+  const wsPort = 9001; // Puerto WebSocket de Mosquitto
+  const brokerUrl = `${protocol}://${host}:${wsPort}`;
 
-  setStatus(`Conectando a broker MQTT (intento proxy /mqtt)...`);
+  setStatus(`Conectando a broker MQTT en ${brokerUrl}...`);
 
   // Construir opciones MQTT a partir de configuración global (si existe)
   // window.MQTT_CONFIG puede definirse en index.html. Ej:
@@ -68,16 +66,10 @@ function connectMqtt() {
   const options = Object.assign({}, baseOptions, mqttConfig);
 
   try {
-    // Primero intentamos conectar a /mqtt en el mismo origen (proxy nginx)
-    client = mqtt.connect(originPathUrl, options);
+    client = mqtt.connect(brokerUrl, options);
   } catch (e) {
-    setStatus('Error al crear cliente MQTT (proxy): ' + e + '. Intentando fallback...');
-    try {
-      client = mqtt.connect(fallbackUrl, options);
-    } catch (e2) {
-      setStatus('Error al crear cliente MQTT (fallback): ' + e2);
-      return;
-    }
+    setStatus('Error al crear cliente MQTT: ' + e);
+    return;
   }
 
   client.on('connect', () => {
