@@ -37,13 +37,15 @@ function onMessage(topic, payload) {
       return;
     }
 
+    // Mostrar la imagen capturada siempre
+    document.getElementById('camera-preview').classList.remove('hidden');
+    refreshCamera();
+
     if (msg.coincidencia) {
       setStatus(`✅ Coincidencia: ${msg.nombre} (distancia ${Number(msg.distancia).toFixed(3)})`);
       PERSON_INFO.classList.remove('hidden');
       NAME_EL.innerText = `Nombre: ${msg.nombre}`;
       CONF_EL.innerText = `Distancia: ${Number(msg.distancia).toFixed(3)}`;
-      // Actualizar imagen cuando hay coincidencia
-      refreshCamera();
     } else {
       setStatus('❌ No se encontró coincidencia');
       PERSON_INFO.classList.add('hidden');
@@ -150,10 +152,10 @@ function refreshCamera() {
 
 document.getElementById('refresh-camera').addEventListener('click', refreshCamera);
 
-// Auto-refrescar la imagen cada 10 segundos (solo si el panel está visible)
+// Auto-refrescar la imagen cada 10 segundos (solo si el panel de cámara está visible)
 setInterval(() => {
-  const personInfo = document.getElementById('person-info');
-  if (!personInfo.classList.contains('hidden')) {
+  const cameraPreview = document.getElementById('camera-preview');
+  if (!cameraPreview.classList.contains('hidden')) {
     refreshCamera();
   }
 }, 10000);
