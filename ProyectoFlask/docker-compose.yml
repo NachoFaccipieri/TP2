@@ -1,0 +1,12 @@
+version: '3'
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    restart: unless-stopped
+    ports:
+      - "1883:1883"  # MQTT estándar (para Python)
+      - "9001:9001"  # WebSocket (para navegador)
+    volumes:
+      - ./mosquitto/config:/mosquitto/config:ro
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log

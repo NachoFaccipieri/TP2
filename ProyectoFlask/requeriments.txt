@@ -1,0 +1,18 @@
+# Librerías principales
+imageio>=2.34.0
+mtcnn>=0.1.1
+keras-facenet>=0.3.2
+numpy>=1.24.0
+Pillow>=10.0.0
+
+# Dependencias necesarias para keras-facenet y mtcnn
+tensorflow>=2.20.0
+keras>=3.11.3
+
+# MQTT client
+paho-mqtt==1.6.1
+
+# Flask para servir la web
+Flask>=2.3.0
+Flask-CORS>=4.0.0
+

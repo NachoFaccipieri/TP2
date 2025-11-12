@@ -1,0 +1,28 @@
+# Unit file example for comprobarRostro.py
+# Copy to /etc/systemd/system/comprobarrostro.service and then:
+# sudo systemctl daemon-reload
+# sudo systemctl enable --now comprobarrostro.service
+
+[Unit]
+Description=Face recognition MQTT service
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/ComunicacionMQTT
+# Activate virtualenv if used, otherwise use system python
+# ExecStart=/home/pi/ComunicacionMQTT/.venv/bin/python /home/pi/ComunicacionMQTT/comprobarRostro.py
+ExecStart=/usr/bin/python3 /home/pi/ComunicacionMQTT/comprobarRostro.py
+Restart=on-failure
+RestartSec=5
+# Limit resources a bit
+MemoryLimit=900M
+# Environment variables to reduce TensorFlow threading
+Environment=OMP_NUM_THREADS=1
+Environment=MKL_NUM_THREADS=1
+Environment=TF_CPP_MIN_LOG_LEVEL=2
+
+[Install]
+WantedBy=multi-user.target

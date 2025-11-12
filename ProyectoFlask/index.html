@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FaceID - Puerta</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Cliente MQTT (mqtt.js) para WebSockets -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <!-- Opcional: configuración MQTT inyectada en la página.
+       Rellena username/password si tu broker exige autenticación por WebSocket.
+       IMPORTANTE: estas credenciales quedan visibles en el front-end (no seguro para internet).
+  -->
+  <script>
+    window.MQTT_CONFIG = {
+      // username: 'miuser',
+      // password: 'miclave'
+      username: null,
+      password: null
+    };
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h1>Control de Acceso</h1>
+    
+    <!-- Vista previa de la cámara -->
+    <div class="card camera-preview">
+      <h3>Vista de la Cámara</h3>
+      <div class="image-container">
+        <img id="camera-feed" src="/api/camera/last" alt="Vista de cámara" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'640\' height=\'480\'%3E%3Crect fill=\'%23ddd\' width=\'640\' height=\'480\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' fill=\'%23999\'%3ENo hay imagen disponible%3C/text%3E%3C/svg%3E'">
+        <button id="refresh-camera" class="btn-small">🔄 Actualizar</button>
+      </div>
+    </div>
+    
+    <div id="status" class="card">
+      <p>Esperando evento...</p>
+    </div>
+    <button id="register-face" class="btn" style="margin-top:15px;">Registrar nuevo rostro</button>
+    <button id="ring-bell" class="btn" style="margin-top:15px;">Tocar timbre</button>
+    <div id="person-info" class="card hidden">
+      <h2>Resultado</h2>
+      <p id="name"></p>
+      <p id="confidence"></p>
+      <button id="allow" class="btn allow">Permitir acceso</button>
+      <button id="deny" class="btn deny">Denegar acceso</button>
+    </div>
+  </div>
+  <!-- Añadimos querystring de versión para evitar cache en el navegador durante desarrollo -->
+  <script src="script.js?v=2"></script>
+</body>
+</html>
