@@ -42,6 +42,8 @@ function onMessage(topic, payload) {
       PERSON_INFO.classList.remove('hidden');
       NAME_EL.innerText = `Nombre: ${msg.nombre}`;
       CONF_EL.innerText = `Distancia: ${Number(msg.distancia).toFixed(3)}`;
+      // Actualizar imagen cuando hay coincidencia
+      refreshCamera();
     } else {
       setStatus('❌ No se encontró coincidencia');
       PERSON_INFO.classList.add('hidden');
@@ -105,6 +107,8 @@ function registrarNuevoRostro() {
   const payload = JSON.stringify({ nombre });
   client.publish('cerradura/registro', payload);
   setStatus(`Enviando petición de registro para "${nombre}"...`);
+  // Actualizar imagen al registrar
+  setTimeout(refreshCamera, 1000);
 }
 
 // Publicar timbre
@@ -115,6 +119,8 @@ function tocarTimbre() {
   }
   client.publish('cerradura/timbre', 'ping');
   setStatus('Timbre enviado. Esperando respuesta...');
+  // Actualizar imagen al tocar el timbre
+  setTimeout(refreshCamera, 1000);
 }
 
 // Eventos botones
@@ -144,8 +150,13 @@ function refreshCamera() {
 
 document.getElementById('refresh-camera').addEventListener('click', refreshCamera);
 
-// Auto-refrescar la imagen cada 5 segundos
-setInterval(refreshCamera, 5000);
+// Auto-refrescar la imagen cada 10 segundos (solo si el panel está visible)
+setInterval(() => {
+  const personInfo = document.getElementById('person-info');
+  if (!personInfo.classList.contains('hidden')) {
+    refreshCamera();
+  }
+}, 10000);
 
 // Start
 resetUI();
