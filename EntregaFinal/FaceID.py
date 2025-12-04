@@ -42,12 +42,6 @@ PIN_BOTON = 16
 
 # Configurar GPIO
 try:
-    # Limpiar configuración anterior si existe
-    try:
-        GPIO.cleanup()
-    except:
-        pass
-    
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
     
@@ -102,7 +96,6 @@ led_blink_thread = None
 servo_open_timer = None
 led_state_lock = threading.Lock()
 app_state_lock = threading.Lock()
-boton_presionado_flag = False
 registro_solicitado_flag = False
 boton_gpiozero = None  # Se inicializa en setup_boton()
 
@@ -281,10 +274,7 @@ def cerrar_puerta():
 # ============================================================================
 def on_boton_presionado():
     """Callback cuando se presiona el botón (gpiozero)"""
-    global boton_presionado_flag
-    
     print("[BOTON] ✅ Botón presionado")
-    boton_presionado_flag = True
     
     with app_state_lock:
         estado_actual = current_app_state
@@ -308,12 +298,18 @@ def setup_boton():
     global boton_gpiozero
     
     try:
+        # Forzar que gpiozero use RPi.GPIO
+        import gpiozero
+        gpiozero.Device.pin_factory = gpiozero.RPiGPIOFactory()
+        
         print("[BOTON] Inicializando botón en GPIO", PIN_BOTON)
         boton_gpiozero = Button(PIN_BOTON)
         boton_gpiozero.when_pressed = on_boton_presionado
         print("[BOTON] ✅ Botón listo")
     except Exception as e:
         print(f"[BOTON] Error: {e}")
+        import traceback
+        traceback.print_exc()
 
 def get_embedding_from_pil(img):
     if img.mode != 'RGB':
