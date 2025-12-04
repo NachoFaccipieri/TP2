@@ -41,6 +41,12 @@ PIN_BOTON = 21
 
 # Configurar GPIO
 try:
+    # Limpiar configuración anterior si existe
+    try:
+        GPIO.cleanup()
+    except:
+        pass
+    
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
     
@@ -58,8 +64,10 @@ try:
     GPIO.setup(PIN_BOTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     
     GPIO_INITIALIZED = True
+    print("[GPIO] Inicialización exitosa")
 except Exception as e:
-    print(f"Error al inicializar GPIO: {e}")
+    print(f"[GPIO] Error al inicializar: {e}")
+    print("[GPIO] Sistema continuará sin control de hardware")
     GPIO_INITIALIZED = False
 
 # ============================================================================
@@ -295,10 +303,24 @@ def on_boton_presionado(channel):
 
 def setup_boton():
     """Configura el evento del botón"""
-    if GPIO_INITIALIZED:
+    if not GPIO_INITIALIZED:
+        print("[BOTON] GPIO no inicializado, skipping botón setup")
+        return
+    
+    try:
+        # Remover evento anterior si existe
+        try:
+            GPIO.remove_event_detect(PIN_BOTON)
+        except:
+            pass
+        
         # Usar edge detection para detectar presión (caída de flanco)
         GPIO.add_event_detect(PIN_BOTON, GPIO.FALLING, callback=on_boton_presionado, bouncetime=200)
         print("[BOTON] Botón configurado en GPIO", PIN_BOTON)
+    except RuntimeError as e:
+        print(f"[BOTON] Error al configurar detección de eventos: {e}")
+        print("[BOTON] El botón físico NO funcionará, pero el sistema continuará")
+        print("[BOTON] Intenta: sudo python3 FaceID.py")
 
 def get_embedding_from_pil(img):
     if img.mode != 'RGB':
