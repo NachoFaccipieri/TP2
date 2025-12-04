@@ -314,13 +314,19 @@ def setup_boton():
         except:
             pass
         
+        # Esperar un momento antes de agregar detección
+        time.sleep(0.1)
+        
         # Usar edge detection para detectar presión (caída de flanco)
         GPIO.add_event_detect(PIN_BOTON, GPIO.FALLING, callback=on_boton_presionado, bouncetime=200)
-        print("[BOTON] Botón configurado en GPIO", PIN_BOTON)
+        print("[BOTON] ✅ Botón configurado en GPIO", PIN_BOTON)
     except RuntimeError as e:
-        print(f"[BOTON] Error al configurar detección de eventos: {e}")
-        print("[BOTON] El botón físico NO funcionará, pero el sistema continuará")
-        print("[BOTON] Intenta: sudo python3 FaceID.py")
+        print(f"[BOTON] ⚠️  Error al configurar detección de eventos: {e}")
+        print("[BOTON] Posibles soluciones:")
+        print("[BOTON] 1. Ejecutar con sudo: sudo python3 FaceID.py")
+        print("[BOTON] 2. Agregar usuario al grupo gpio: sudo usermod -a -G gpio $USER")
+        print("[BOTON] 3. Reiniciar la Raspberry Pi")
+        print("[BOTON] El botón físico NO funcionará por ahora, pero el sistema continuará")
 
 def get_embedding_from_pil(img):
     if img.mode != 'RGB':
