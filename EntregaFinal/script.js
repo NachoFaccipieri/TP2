@@ -46,12 +46,11 @@ function onMessage(topic, payload) {
       setStatus(`✅ Coincidencia: ${msg.nombre} (distancia ${Number(msg.distancia).toFixed(3)})`);
       NAME_EL.innerText = `Nombre: ${msg.nombre}`;
       CONF_EL.innerText = `Distancia: ${Number(msg.distancia).toFixed(3)}`;
+      PERSON_INFO.classList.remove('hidden');
     } else {
-      setStatus('❌ No se encontró coincidencia (distancia ${Number(msg.distancia).toFixed(3)}). ¿Permitir acceso de todas formas?');
+      setStatus(`❌ No se encontró coincidencia (distancia ${Number(msg.distancia).toFixed(3)}). ¿Permitir de todas formas?`);
+      PERSON_INFO.classList.add('hidden');
     }
-    
-    // Mostrar botones de confirmación siempre (hay o no coincidencia)
-    PERSON_INFO.classList.remove('hidden');
   }
 }
 
@@ -121,19 +120,17 @@ function registrarNuevoRostro() {
 }
 
 // Eventos botones
-// Cuando haya una persona en pantalla, estos botones publican la confirmación a la Raspberry
+// Estos botones publican la confirmación a la Raspberry
 document.getElementById('allow').addEventListener('click', () => {
   if (!client || !client.connected) { alert('No conectado al broker MQTT'); return; }
   client.publish('cerradura/confirmacion', JSON.stringify({ permitir: true }));
   setStatus('✅ Enviado: permitir acceso');
-  PERSON_INFO.classList.add('hidden');
 });
 
 document.getElementById('deny').addEventListener('click', () => {
   if (!client || !client.connected) { alert('No conectado al broker MQTT'); return; }
   client.publish('cerradura/confirmacion', JSON.stringify({ permitir: false }));
   setStatus('❌ Enviado: denegar acceso');
-  PERSON_INFO.classList.add('hidden');
 });
 
 document.getElementById('register-face').addEventListener('click', registrarNuevoRostro);
