@@ -68,14 +68,6 @@ except Exception as e:
     print("[GPIO] Sistema continuará sin control de hardware")
     GPIO_INITIALIZED = False
 
-# Configurar botón FUERA del bloque try/except para que no rompa todo
-if GPIO_INITIALIZED:
-    try:
-        GPIO.setup(PIN_BOTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        print("[GPIO] Botón configurado en GPIO", PIN_BOTON)
-    except Exception as e:
-        print(f"[GPIO] Advertencia: No se pudo configurar botón: {e}")
-
 # ============================================================================
 # MÁQUINA DE ESTADOS - LED
 # ============================================================================
@@ -312,27 +304,16 @@ def on_boton_presionado():
         print(f"[BOTON] → Estado: {estado_actual.name}, botón ignorado")
 
 def setup_boton():
-    """Configura el evento del botón usando gpiozero"""
+    """Configura el evento del botón usando gpiozero (igual que Boton.py)"""
     global boton_gpiozero
     
-    if not GPIO_INITIALIZED:
-        print("[BOTON] GPIO no inicializado, skipping botón setup")
-        return
-    
     try:
-        # Crear botón con gpiozero (pull_up=True por defecto)
-        boton_gpiozero = Button(PIN_BOTON, pull_up=True, bounce_time=0.2)
-        
-        # Asignar callback a presión
+        print("[BOTON] Inicializando botón en GPIO", PIN_BOTON)
+        boton_gpiozero = Button(PIN_BOTON)
         boton_gpiozero.when_pressed = on_boton_presionado
-        
-        print("[BOTON] ✅ Botón configurado en GPIO", PIN_BOTON, "con gpiozero")
+        print("[BOTON] ✅ Botón listo")
     except Exception as e:
-        print(f"[BOTON] ⚠️  Error al configurar botón: {e}")
-        print("[BOTON] Soluciones:")
-        print("[BOTON] 1. pip install gpiozero")
-        print("[BOTON] 2. Ejecutar con sudo")
-        boton_gpiozero = None
+        print(f"[BOTON] Error: {e}")
 
 def get_embedding_from_pil(img):
     if img.mode != 'RGB':
