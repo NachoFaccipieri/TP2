@@ -22,6 +22,7 @@ import io
 import base64
 import RPi.GPIO as GPIO
 from enum import Enum
+from gpiozero import Button
 
 # Flask imports
 from flask import Flask, send_from_directory, jsonify, Response, send_file
@@ -31,13 +32,13 @@ from flask_cors import CORS
 # CONFIGURACIÓN GPIO - LED RGB, SERVO, BOTÓN
 # ============================================================================
 # LED RGB (Cátodo Común)
-PIN_LED_ROJO = 17
+PIN_LED_AZUL = 17
 PIN_LED_VERDE = 27
-PIN_LED_AZUL = 22
+PIN_LED_ROJO = 22
 # Servo
 PIN_SERVO = 14
 # Botón
-PIN_BOTON = 21
+PIN_BOTON = 16
 
 # Configurar GPIO
 try:
@@ -60,15 +61,20 @@ try:
     servo_pwm = GPIO.PWM(PIN_SERVO, 50)
     servo_pwm.start(0)
     
-    # Configurar botón como entrada con pull-up
-    GPIO.setup(PIN_BOTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    
     GPIO_INITIALIZED = True
-    print("[GPIO] Inicialización exitosa")
+    print("[GPIO] Inicialización exitosa - Servo OK")
 except Exception as e:
     print(f"[GPIO] Error al inicializar: {e}")
     print("[GPIO] Sistema continuará sin control de hardware")
     GPIO_INITIALIZED = False
+
+# Configurar botón FUERA del bloque try/except para que no rompa todo
+if GPIO_INITIALIZED:
+    try:
+        GPIO.setup(PIN_BOTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        print("[GPIO] Botón configurado en GPIO", PIN_BOTON)
+    except Exception as e:
+        print(f"[GPIO] Advertencia: No se pudo configurar botón: {e}")
 
 # ============================================================================
 # MÁQUINA DE ESTADOS - LED
@@ -106,6 +112,7 @@ led_state_lock = threading.Lock()
 app_state_lock = threading.Lock()
 boton_presionado_flag = False
 registro_solicitado_flag = False
+boton_gpiozero = None  # Se inicializa en setup_boton()
 
 # Config
 BROKER = os.environ.get('MQTT_BROKER', 'localhost')
@@ -280,11 +287,11 @@ def cerrar_puerta():
 # ============================================================================
 # FUNCIONES DE CONTROL DE BOTÓN
 # ============================================================================
-def on_boton_presionado(channel):
-    """Callback cuando se presiona el botón"""
+def on_boton_presionado():
+    """Callback cuando se presiona el botón (gpiozero)"""
     global boton_presionado_flag
     
-    print("[BOTON] Botón presionado")
+    print("[BOTON] ✅ Botón presionado")
     boton_presionado_flag = True
     
     with app_state_lock:
@@ -293,40 +300,39 @@ def on_boton_presionado(channel):
     # Lógica según el estado actual
     if estado_actual == AppState.ESPERANDO:
         # Inicia reconocimiento
-        print("[BOTON] Iniciando reconocimiento...")
+        print("[BOTON] → Iniciando reconocimiento...")
         iniciar_reconocimiento()
     
     elif estado_actual == AppState.ESPERANDO_REGISTRO:
         # Inicia registro
-        print("[BOTON] Iniciando registro...")
+        print("[BOTON] → Iniciando registro...")
         iniciar_registro()
+    
+    else:
+        print(f"[BOTON] → Estado: {estado_actual.name}, botón ignorado")
 
 def setup_boton():
-    """Configura el evento del botón"""
+    """Configura el evento del botón usando gpiozero"""
+    global boton_gpiozero
+    
     if not GPIO_INITIALIZED:
         print("[BOTON] GPIO no inicializado, skipping botón setup")
         return
     
     try:
-        # Remover evento anterior si existe
-        try:
-            GPIO.remove_event_detect(PIN_BOTON)
-        except:
-            pass
+        # Crear botón con gpiozero (pull_up=True por defecto)
+        boton_gpiozero = Button(PIN_BOTON, pull_up=True, bounce_time=0.2)
         
-        # Esperar un momento antes de agregar detección
-        time.sleep(0.1)
+        # Asignar callback a presión
+        boton_gpiozero.when_pressed = on_boton_presionado
         
-        # Usar edge detection para detectar presión (caída de flanco)
-        GPIO.add_event_detect(PIN_BOTON, GPIO.FALLING, callback=on_boton_presionado, bouncetime=200)
-        print("[BOTON] ✅ Botón configurado en GPIO", PIN_BOTON)
-    except RuntimeError as e:
-        print(f"[BOTON] ⚠️  Error al configurar detección de eventos: {e}")
-        print("[BOTON] Posibles soluciones:")
-        print("[BOTON] 1. Ejecutar con sudo: sudo python3 FaceID.py")
-        print("[BOTON] 2. Agregar usuario al grupo gpio: sudo usermod -a -G gpio $USER")
-        print("[BOTON] 3. Reiniciar la Raspberry Pi")
-        print("[BOTON] El botón físico NO funcionará por ahora, pero el sistema continuará")
+        print("[BOTON] ✅ Botón configurado en GPIO", PIN_BOTON, "con gpiozero")
+    except Exception as e:
+        print(f"[BOTON] ⚠️  Error al configurar botón: {e}")
+        print("[BOTON] Soluciones:")
+        print("[BOTON] 1. pip install gpiozero")
+        print("[BOTON] 2. Ejecutar con sudo")
+        boton_gpiozero = None
 
 def get_embedding_from_pil(img):
     if img.mode != 'RGB':
