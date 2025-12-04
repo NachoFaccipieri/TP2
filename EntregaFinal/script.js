@@ -146,11 +146,7 @@ function refreshCamera() {
   img.src = `/api/camera/last?t=${timestamp}`;
 }
 
-// Solo agregar listener si el botón existe
-const refreshBtn = document.getElementById('refresh-camera');
-if (refreshBtn) {
-  refreshBtn.addEventListener('click', refreshCamera);
-}
+//document.getElementById('refresh-camera').addEventListener('click', refreshCamera);
 
 // Auto-refrescar la imagen cada 10 segundos (solo si el panel de cámara está visible)
 setInterval(() => {
