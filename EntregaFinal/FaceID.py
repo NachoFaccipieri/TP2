@@ -297,19 +297,10 @@ def setup_boton():
     """Configura el evento del botón usando gpiozero (igual que Boton.py)"""
     global boton_gpiozero
     
-    try:
-        # Forzar que gpiozero use RPi.GPIO
-        import gpiozero
-        gpiozero.Device.pin_factory = gpiozero.RPiGPIOFactory()
-        
-        print("[BOTON] Inicializando botón en GPIO", PIN_BOTON)
-        boton_gpiozero = Button(PIN_BOTON)
-        boton_gpiozero.when_pressed = on_boton_presionado
-        print("[BOTON] ✅ Botón listo")
-    except Exception as e:
-        print(f"[BOTON] Error: {e}")
-        import traceback
-        traceback.print_exc()
+    print("[BOTON] Inicializando botón en GPIO", PIN_BOTON)
+    boton_gpiozero = Button(PIN_BOTON)
+    boton_gpiozero.when_pressed = on_boton_presionado
+    print("[BOTON] ✅ Botón listo")
 
 def get_embedding_from_pil(img):
     if img.mode != 'RGB':
