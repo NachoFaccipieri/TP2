@@ -48,7 +48,7 @@ function onMessage(topic, payload) {
       CONF_EL.innerText = `Distancia: ${Number(msg.distancia).toFixed(3)}`;
       PERSON_INFO.classList.remove('hidden');
     } else {
-      setStatus(`❌ No se encontró coincidencia (distancia ${Number(msg.distancia).toFixed(3)}). ¿Permitir de todas formas?`);
+      setStatus(`❌ No se encontró coincidencia (distancia ${Number(msg.distancia).toFixed(3)})`);
       PERSON_INFO.classList.add('hidden');
     }
   }
