@@ -1,9 +1,0 @@
-Flask
-pymongo
-imageio
-mtcnn
-keras-facenet
-numpy
-Pillow
-flask-cors
-paho-mqtt

@@ -248,7 +248,7 @@ def abrir_puerta():
     
     print("[SERVO] Abriendo puerta...")
     current_servo_state = ServoState.ABIERTO
-    set_servo_angle(90)  # 90 grados = abierto
+    set_servo_angle(180)  # 90 grados = abierto
     
     # Cancelar timer anterior si existe
     if servo_open_timer:
