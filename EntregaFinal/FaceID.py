@@ -97,6 +97,7 @@ servo_open_timer = None
 led_state_lock = threading.Lock()
 app_state_lock = threading.Lock()
 registro_solicitado_flag = False
+nombre_registro_pendiente = None  # Nombre del próximo registro a capturar
 boton_gpiozero = None  # Se inicializa en setup_boton()
 
 # Config
@@ -349,19 +350,57 @@ def iniciar_reconocimiento():
 
 def iniciar_registro():
     """Inicia el proceso de registro desde el botón físico"""
-    global mqtt_client, registro_solicitado_flag
+    global mqtt_client, registro_solicitado_flag, nombre_registro_pendiente
     
     if not registro_solicitado_flag:
         print("[APP] No hay registro solicitado, ignorando presión de botón")
         return
     
+    print(f"[REGISTRO] Capturando rostro para: {nombre_registro_pendiente}")
     cambiar_estado_app(AppState.REGISTRANDO)
     cambiar_estado_led(LEDState.AZUL_TITILANTE)
     
-    if mqtt_client:
-        # El nombre debería haberse solicitado desde la web
-        # Aquí simplemente publicamos el evento para que comience el registro
-        mqtt_client.publish(TOPIC_REGISTRO, 'registrando_desde_boton')
+    # Capturar imagen
+    img, err = capture_frame()
+    if err:
+        print(f"[REGISTRO] Error de captura: {err}")
+        if mqtt_client:
+            mqtt_client.publish(TOPIC_RESPUESTA, json.dumps({'ok': False, 'mensaje': err}))
+        cambiar_estado_app(AppState.ESPERANDO)
+        cambiar_estado_led(LEDState.AZUL_SOLIDO)
+        registro_solicitado_flag = False
+        nombre_registro_pendiente = None
+        return
+    
+    # Obtener embedding
+    embedding = get_embedding_from_pil(img)
+    if embedding is None:
+        print("[REGISTRO] No se detectó rostro")
+        if mqtt_client:
+            mqtt_client.publish(TOPIC_RESPUESTA, json.dumps({'ok': False, 'mensaje': 'No se detectó rostro'}))
+        cambiar_estado_app(AppState.ESPERANDO)
+        cambiar_estado_led(LEDState.AZUL_SOLIDO)
+        registro_solicitado_flag = False
+        nombre_registro_pendiente = None
+        return
+    
+    # Guardar embedding
+    try:
+        save_embedding(embedding, nombre_registro_pendiente)
+        print(f'[REGISTRO] Rostro {nombre_registro_pendiente} registrado exitosamente')
+        if mqtt_client:
+            mqtt_client.publish(TOPIC_RESPUESTA, json.dumps({'ok': True, 'mensaje': f'Rostro {nombre_registro_pendiente} registrado'}))
+        cambiar_estado_app(AppState.ESPERANDO)
+        cambiar_estado_led(LEDState.AZUL_SOLIDO)
+    except Exception as e:
+        print(f"[REGISTRO] Error al guardar: {e}")
+        if mqtt_client:
+            mqtt_client.publish(TOPIC_RESPUESTA, json.dumps({'ok': False, 'mensaje': f'Error al guardar: {e}'}))
+        cambiar_estado_app(AppState.ESPERANDO)
+        cambiar_estado_led(LEDState.AZUL_SOLIDO)
+    
+    registro_solicitado_flag = False
+    nombre_registro_pendiente = None
 
 def load_embeddings(file_path=EMBED_FILE, names_path=NAMES_FILE):
     embeddings = []
@@ -431,7 +470,7 @@ def on_connect(client, userdata, flags, rc):
 
 def handle_registro(client, payload):
     """Maneja el evento de registro de nuevo rostro"""
-    global registro_solicitado_flag
+    global registro_solicitado_flag, nombre_registro_pendiente
     
     # payload puede ser JSON {'nombre': 'Mati'} o solo un nombre
     nombre = None
@@ -441,49 +480,17 @@ def handle_registro(client, payload):
     except Exception:
         nombre = payload.decode() if isinstance(payload, bytes) else str(payload)
 
-    if not nombre or nombre == 'registrando_desde_boton':
-        # El nombre se solicita desde web, aquí solo marcamos que se solicita
-        print("[REGISTRO] Esperando presión de botón para capturar...")
-        registro_solicitado_flag = True
-        cambiar_estado_app(AppState.ESPERANDO_REGISTRO)
-        cambiar_estado_led(LEDState.AZUL_TITILANTE)
-        client.publish(TOPIC_STATUS, 'Presiona el botón físico para registrar nuevo rostro')
-        return
-
-    print(f"[REGISTRO] Registrando rostro para: {nombre}")
-    cambiar_estado_app(AppState.REGISTRANDO)
+    # SIEMPRE esperar el botón físico - cambiar a ESPERANDO_REGISTRO
+    print(f"[REGISTRO] Solicitando registro para: {nombre}")
+    print("[REGISTRO] Esperando presión de botón físico para capturar...")
+    
+    # Guardar el nombre para cuando se presione el botón
+    nombre_registro_pendiente = nombre
+    
+    registro_solicitado_flag = True
+    cambiar_estado_app(AppState.ESPERANDO_REGISTRO)
     cambiar_estado_led(LEDState.AZUL_TITILANTE)
-    
-    client.publish(TOPIC_STATUS, f'Registrando rostro: {nombre}')
-    img, err = capture_frame()
-    if err:
-        client.publish(TOPIC_STATUS, f'Error captura: {err}')
-        client.publish(TOPIC_RESPUESTA, json.dumps({'ok': False, 'mensaje': err}))
-        cambiar_estado_app(AppState.ESPERANDO)
-        cambiar_estado_led(LEDState.AZUL_SOLIDO)
-        registro_solicitado_flag = False
-        return
-
-    embedding = get_embedding_from_pil(img)
-    if embedding is None:
-        client.publish(TOPIC_RESPUESTA, json.dumps({'ok': False, 'mensaje': 'No se detectó rostro'}))
-        cambiar_estado_app(AppState.ESPERANDO)
-        cambiar_estado_led(LEDState.AZUL_SOLIDO)
-        registro_solicitado_flag = False
-        return
-
-    try:
-        save_embedding(embedding, nombre)
-        client.publish(TOPIC_RESPUESTA, json.dumps({'ok': True, 'mensaje': f'Rostro {nombre} registrado'}))
-        print(f'[REGISTRO] Rostro {nombre} registrado exitosamente')
-        cambiar_estado_app(AppState.ESPERANDO)
-        cambiar_estado_led(LEDState.AZUL_SOLIDO)
-    except Exception as e:
-        client.publish(TOPIC_RESPUESTA, json.dumps({'ok': False, 'mensaje': f'Error al guardar: {e}'}))
-        cambiar_estado_app(AppState.ESPERANDO)
-        cambiar_estado_led(LEDState.AZUL_SOLIDO)
-    
-    registro_solicitado_flag = False
+    client.publish(TOPIC_STATUS, f'Presiona el botón físico para registrar rostro de "{nombre}"')
 
 
 def handle_timbre(client):
@@ -531,6 +538,8 @@ def handle_timbre(client):
         nombre = names[idx] if idx < len(names) else f'Persona #{idx+1}'
         print(f'[TIMBRE] Coincidencia: {nombre} (distancia {min_dist:.4f})')
         last_recognized_person = {'nombre': nombre, 'distancia': min_dist}
+        # LED amarillo mientras se espera confirmación (similar a rechazado pero diferente)
+        cambiar_estado_led(LEDState.AMARILLO_SOLIDO)
         client.publish(TOPIC_RESPUESTA, json.dumps({
             'ok': True,
             'mensaje': 'Coincidencia encontrada',
@@ -541,6 +550,8 @@ def handle_timbre(client):
     else:
         print(f'[TIMBRE] No coincidencia (min dist {min_dist:.4f})')
         last_recognized_person = None
+        # LED AZUL titilante para indicar "espera decisión manual"
+        cambiar_estado_led(LEDState.AZUL_TITILANTE)
         client.publish(TOPIC_RESPUESTA, json.dumps({
             'ok': True,
             'mensaje': 'No coincide con la base',

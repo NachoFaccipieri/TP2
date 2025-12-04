@@ -44,13 +44,14 @@ function onMessage(topic, payload) {
 
     if (msg.coincidencia) {
       setStatus(`✅ Coincidencia: ${msg.nombre} (distancia ${Number(msg.distancia).toFixed(3)})`);
-      PERSON_INFO.classList.remove('hidden');
       NAME_EL.innerText = `Nombre: ${msg.nombre}`;
       CONF_EL.innerText = `Distancia: ${Number(msg.distancia).toFixed(3)}`;
     } else {
-      setStatus('❌ No se encontró coincidencia');
-      PERSON_INFO.classList.add('hidden');
+      setStatus('❌ No se encontró coincidencia (distancia ${Number(msg.distancia).toFixed(3)}). ¿Permitir acceso de todas formas?');
     }
+    
+    // Mostrar botones de confirmación siempre (hay o no coincidencia)
+    PERSON_INFO.classList.remove('hidden');
   }
 }
 
