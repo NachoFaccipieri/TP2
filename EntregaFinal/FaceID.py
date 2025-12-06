@@ -557,13 +557,19 @@ def handle_timbre(client):
     min_dist = min(distancias)
     idx = int(np.argmin(distancias))
     umbral = 0.8  # Umbral de distancia para coincidencia
+    umbral_perfecto = 0.2  # Distancia considerada como 100% de coincidencia
 
     # Cambiar a estado esperando confirmación
     cambiar_estado_app(AppState.ESPERANDO_CONFIRMACION)
 
     if min_dist < umbral:
         nombre = names[idx] if idx < len(names) else f'Persona #{idx+1}'
-        porcentaje = int((1 - min_dist / umbral) * 100) if min_dist < umbral else 0
+        # Calcular porcentaje: 0.2 o menos = 100%, 0.8 = 0%
+        if min_dist <= umbral_perfecto:
+            porcentaje = 100
+        else:
+            porcentaje = int((1 - (min_dist - umbral_perfecto) / (umbral - umbral_perfecto)) * 100)
+        porcentaje = max(0, min(100, porcentaje))  # Asegurar que esté entre 0-100
         print(f'[TIMBRE] Coincidencia: {nombre} ({porcentaje}% de coincidencia)')
         last_recognized_person = {'nombre': nombre, 'distancia': min_dist}
         # LED amarillo mientras se espera confirmación (similar a rechazado pero diferente)
