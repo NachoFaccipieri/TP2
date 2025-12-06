@@ -43,12 +43,12 @@ function onMessage(topic, payload) {
     refreshCamera();
 
     if (msg.coincidencia) {
-      setStatus(`✅ Coincidencia: ${msg.nombre} (distancia ${Number(msg.distancia).toFixed(3)})`);
+      setStatus(`✅ Coincidencia con ${msg.nombre}: ${msg.porcentaje}%`);
       NAME_EL.innerText = `Nombre: ${msg.nombre}`;
-      CONF_EL.innerText = `Distancia: ${Number(msg.distancia).toFixed(3)}`;
+      CONF_EL.innerText = `Coincidencia: ${msg.porcentaje}%`;
       PERSON_INFO.classList.remove('hidden');
     } else {
-      setStatus(`❌ No se encontró coincidencia (distancia ${Number(msg.distancia).toFixed(3)})`);
+      setStatus(`❌ No se encontró coincidencia`);
       PERSON_INFO.classList.add('hidden');
     }
   }
