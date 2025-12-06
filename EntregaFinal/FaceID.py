@@ -1,12 +1,4 @@
 import os
-# Ajustes para Pi con poca RAM: limitar hilos y reducir logs de TF
-# Deben establecerse antes de importar TensorFlow/keras para que tengan efecto
-#os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '2')
-#os.environ.setdefault('OMP_NUM_THREADS', '1')
-#os.environ.setdefault('MKL_NUM_THREADS', '1')
-#os.environ.setdefault('INTRA_OP_NUM_THREADS', '1')
-#os.environ.setdefault('INTER_OP_NUM_THREADS', '1')
-
 import cv2      # <--- Para la cámara
 import sys      # <--- Para salir limpiamente
 from mtcnn import MTCNN
@@ -90,7 +82,7 @@ class AppState(Enum):
 
 # Variables globales de estado
 current_app_state = AppState.INICIALIZANDO
-current_led_state = LEDState.AMARILLO_TITILANTE
+current_led_state = None
 current_servo_state = ServoState.CERRADO
 led_blink_thread = None
 servo_open_timer = None
@@ -122,17 +114,6 @@ last_captured_image = None
 last_image_lock = threading.Lock()
 mqtt_client = None
 last_recognized_person = None  # Almacena la última persona reconocida para la confirmación
-
-
-print("Cargando MTCNN y FaceNet (TensorFlow)...")
-try:
-    detector = MTCNN()
-    embedder = FaceNet()
-    print("Modelos cargados.")
-except Exception as e:
-    print(f"Error al cargar modelos de TensorFlow: {e}")
-    print("Esto probablemente sea un error de falta de memoria (RAM).")
-    sys.exit(1)
 
 
 # ============================================================================
@@ -224,6 +205,44 @@ def _led_parpadeo(intervalo, color):
         apagar_todos_leds()
         time.sleep(intervalo)
 
+
+# ============================================================================
+# CARGA DE MODELOS CON LED AMARILLO TITILANTE
+# ============================================================================
+# Activar LED amarillo titilante durante la inicialización
+cambiar_estado_led(LEDState.AMARILLO_TITILANTE)
+
+print("Cargando MTCNN y FaceNet (TensorFlow)...")
+try:
+    detector = MTCNN()
+    embedder = FaceNet()
+    print("Modelos cargados.")
+    
+    # Realizar reconocimiento inicial con imagen vacía para optimizar tiempos posteriores
+    print("[INIT] Realizando reconocimiento inicial (warm-up)...")
+    try:
+        # Crear una imagen negra de 640x480 (tamaño típico de cámara)
+        dummy_img = np.zeros((480, 640, 3), dtype=np.uint8)
+        dummy_pil = Image.fromarray(dummy_img)
+        
+        # Intentar detectar rostro (no encontrará ninguno, pero inicializará el detector)
+        detector.detect_faces(dummy_img)
+        
+        # Crear una imagen falsa de rostro 160x160 para inicializar FaceNet
+        dummy_face = np.random.randint(0, 255, (1, 160, 160, 3), dtype=np.uint8)
+        embedder.embeddings(dummy_face)
+        
+        print("[INIT] ✅ Reconocimiento inicial completado - sistema optimizado")
+    except Exception as e:
+        print(f"[INIT] ⚠️ Advertencia en warm-up: {e}")
+        # No es crítico si falla, continuar de todas formas
+    
+except Exception as e:
+    print(f"Error al cargar modelos de TensorFlow: {e}")
+    print("Esto probablemente sea un error de falta de memoria (RAM).")
+    sys.exit(1)
+    
+    
 # ============================================================================
 # FUNCIONES DE CONTROL DE SERVO
 # ============================================================================
