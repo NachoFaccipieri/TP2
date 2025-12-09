@@ -95,6 +95,8 @@ boton_gpiozero = None  # Se inicializa en setup_boton()
 # Config
 BROKER = os.environ.get('MQTT_BROKER', 'localhost')
 BROKER_PORT = int(os.environ.get('MQTT_PORT', '1883'))
+MQTT_USERNAME = os.environ.get('MQTT_USERNAME')
+MQTT_PASSWORD = os.environ.get('MQTT_PASSWORD')
 TOPIC_REGISTRO = os.environ.get('TOPIC_REGISTRO', 'cerradura/registro')
 TOPIC_TIMBRE = os.environ.get('TOPIC_TIMBRE', 'cerradura/timbre')
 TOPIC_RESPUESTA = os.environ.get('TOPIC_RESPUESTA', 'cerradura/persona')
@@ -637,6 +639,9 @@ def main():
     client.on_connect = on_connect
     client.on_message = on_message
 
+    if MQTT_USERNAME:
+        mqtt_client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+        
     try:
         client.connect(BROKER, BROKER_PORT, 60)
     except Exception as e:
@@ -733,6 +738,9 @@ def start_mqtt():
     mqtt_client.on_connect = on_connect
     mqtt_client.on_message = on_message
 
+    if MQTT_USERNAME:
+        mqtt_client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+        
     try:
         mqtt_client.connect(BROKER, BROKER_PORT, 60)
     except Exception as e:
