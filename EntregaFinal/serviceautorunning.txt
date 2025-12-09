@@ -4,15 +4,15 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-# CAMBIO IMPORTANTE: Tu usuario real
+#usuario real
 User=grupoa3b
 
-# CAMBIO IMPORTANTE: La ruta real donde guardaste el .sh
-# Asegúrate que el archivo se llame exactamente igual (mayúsculas/minúsculas)
+# ruta donde se guardo el .sh
 ExecStart=/home/grupoa3b/iniciar_Faceid.sh
 
 Restart=always
 RestartSec=5
 
 [Install]
+
 WantedBy=multi-user.target
