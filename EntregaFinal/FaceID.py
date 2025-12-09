@@ -1,20 +1,19 @@
 import os
-import cv2      # <--- Para la cámara
-import sys      # <--- Para salir limpiamente
-from mtcnn import MTCNN
-from keras_facenet import FaceNet
-import numpy as np
-from PIL import Image
+import cv2      #Para capturar imagen
+import sys                  
+from mtcnn import MTCNN    #Para detectar rostro dentro de imagen 
+from keras_facenet import FaceNet    #Modelo de reconocimiento
+import numpy as np        #Operaciones con vectores
+from PIL import Image     #Normalizacion L2   
 import json
-import os
-import threading
-import paho.mqtt.client as mqtt
-import time
-import io
-import base64
-import RPi.GPIO as GPIO
+import threading          #Para crear hilos.  
+import paho.mqtt.client as mqtt    #Libreria asociado a MQTT
+import time               #Implementar delays
+import io                
+import base64              #Codificacion de imagenes
+import RPi.GPIO as GPIO    #Para funcionalidades GPIO
 from enum import Enum
-from gpiozero import Button
+from gpiozero import Button    #Para funcionalides del pulsador
 
 # Flask imports
 from flask import Flask, send_from_directory, jsonify, Response, send_file
@@ -46,7 +45,7 @@ try:
     GPIO.setup(PIN_SERVO, GPIO.OUT)
     servo_pwm = GPIO.PWM(PIN_SERVO, 50)
     servo_pwm.start(0)
-    
+    #Inicializacion de GPIO
     GPIO_INITIALIZED = True
     print("[GPIO] Inicialización exitosa - Servo OK")
 except Exception as e:
@@ -58,12 +57,12 @@ except Exception as e:
 # MÁQUINA DE ESTADOS - LED
 # ============================================================================
 class LEDState(Enum):
-    AMARILLO_TITILANTE = 1  # Startup/procesando registro
+    AMARILLO_TITILANTE = 1  # Inicializando/procesando registro
     AZUL_SOLIDO = 2          # Listo
     VERDE_10S = 3            # Acceso permitido (10 segundos)
     ROJO_10S = 4             # Acceso denegado (10 segundos)
     AMARILLO_SOLIDO = 5      # Procesando reconocimiento
-    AZUL_TITILANTE = 6       # Registrando (titilante)
+    AZUL_TITILANTE = 6       # Registrando
 
 class ServoState(Enum):
     CERRADO = 0
@@ -81,22 +80,23 @@ class AppState(Enum):
     REGISTRANDO = 5
 
 # Variables globales de estado
-current_app_state = AppState.INICIALIZANDO
-current_led_state = None
-current_servo_state = ServoState.CERRADO
-led_blink_thread = None
-servo_open_timer = None
-led_state_lock = threading.Lock()
-app_state_lock = threading.Lock()
-registro_solicitado_flag = False
-nombre_registro_pendiente = None  # Nombre del próximo registro a capturar
-boton_gpiozero = None  # Se inicializa en setup_boton()
+current_app_state = AppState.INICIALIZANDO    #Estado actual de la app
+current_led_state = None                      #Estado actual del led
+current_servo_state = ServoState.CERRADO      #Estado actual del servo
+led_blink_thread = None                       #Hilo para el parpadeo del led
+servo_open_timer = None                       #Timer para cerrar el servo. 
+led_state_lock = threading.Lock()             #Evita que dos hilos cambien el led al mismo tiempo 
+app_state_lock = threading.Lock()             #Evita conflictos al cambiar de estados   
+registro_solicitado_flag = False              #Variable para indicar que se solicita un registro de rostro
+nombre_registro_pendiente = None              # Nombre del próximo registro a capturar
+boton_gpiozero = None                         # Se inicializa en setup_boton()
 
-# Config
+# Configuracion del Broker.
 BROKER = os.environ.get('MQTT_BROKER', 'localhost')
 BROKER_PORT = int(os.environ.get('MQTT_PORT', '1883'))
 MQTT_USERNAME = os.environ.get('MQTT_USERNAME','grupoa3b')
 MQTT_PASSWORD = os.environ.get('MQTT_PASSWORD','grupoa3b')
+#Topicos
 TOPIC_REGISTRO = os.environ.get('TOPIC_REGISTRO', 'cerradura/registro')
 TOPIC_TIMBRE = os.environ.get('TOPIC_TIMBRE', 'cerradura/timbre')
 TOPIC_RESPUESTA = os.environ.get('TOPIC_RESPUESTA', 'cerradura/persona')
@@ -153,7 +153,6 @@ def cambiar_estado_led(nuevo_estado):
             print("[LED] Estado: AZUL SOLIDO")
             
         elif nuevo_estado == LEDState.AMARILLO_TITILANTE:
-            # Amarillo = Rojo + Verde
             if led_blink_thread:
                 # Esperar a que termine el hilo anterior
                 pass
@@ -177,7 +176,7 @@ def cambiar_estado_led(nuevo_estado):
             
         elif nuevo_estado == LEDState.AMARILLO_SOLIDO:
             apagar_todos_leds()
-            set_led(rojo=True, verde=True)  # Amarillo = Rojo + Verde
+            set_led(rojo=True, verde=True)  
             print("[LED] Estado: AMARILLO SOLIDO")
             
         elif nuevo_estado == LEDState.AZUL_TITILANTE:
@@ -252,9 +251,8 @@ def set_servo_angle(angle):
     """Establece el ángulo del servo (0-180 grados)"""
     if not GPIO_INITIALIZED:
         return
-    
-    angle = max(0, min(180, angle))  # Limitar a 0-180
-    # Mapear 0-180° a 5-10% duty cycle
+    #Establecer dutycycle del servo
+    angle = max(0, min(180, angle)) 
     duty = 5 + (angle / 180) * 5
     servo_pwm.ChangeDutyCycle(duty)
     time.sleep(0.5)
@@ -269,7 +267,7 @@ def abrir_puerta():
     
     print("[SERVO] Abriendo puerta...")
     current_servo_state = ServoState.ABIERTO
-    set_servo_angle(180)  # 90 grados = abierto
+    set_servo_angle(180)
     
     # Cancelar timer anterior si existe
     if servo_open_timer:
@@ -316,19 +314,23 @@ def on_boton_presionado():
         print(f"[BOTON] → Estado: {estado_actual.name}, botón ignorado")
 
 def setup_boton():
-    """Configura el evento del botón usando gpiozero (igual que Boton.py)"""
+    """Configura el evento del botón usando gpiozero"""
     global boton_gpiozero
     
     print("[BOTON] Inicializando botón en GPIO", PIN_BOTON)
     boton_gpiozero = Button(PIN_BOTON)
+    #Deteccion cuando se presiona el boton
     boton_gpiozero.when_pressed = on_boton_presionado
     print("[BOTON] ✅ Botón listo")
 
-def generarEmbedding(img):
-    if img.mode != 'RGB':
-        img = img.convert('RGB')
-    img_array = np.asarray(img)
+#Funcion para generar embedding a partir de imagen.
+def generarEmbedding(img):    
+    #Se necesita una imagen RGB y la camara la genera BGR
+    if img.mode != 'RGB':            
+        img = img.convert('RGB')    
+    img_array = np.asarray(img)    #Uso de numpy para transformar a vector.
 
+    #MTCNN busca rostro en la imagen.
     detections = detector.detect_faces(img_array)
     if len(detections) == 0:
         return None
@@ -339,7 +341,7 @@ def generarEmbedding(img):
     face = img_array[y:y+h, x:x+w]
 
     print("Generando embedding...")
-    face = Image.fromarray(face).resize((160, 160))
+    face = Image.fromarray(face).resize((160, 160))    #Reajusta imagen a lo que necesita FaceNet
     face = np.asarray(face)
     face = np.expand_dims(face, axis=0)
     embedding = embedder.embeddings(face)[0]
@@ -362,10 +364,10 @@ def cambiar_estado_app(nuevo_estado):
 def iniciar_reconocimiento():
     """Inicia el proceso de reconocimiento desde el botón físico"""
     global mqtt_client
-    
+    #Cambio de estado
     cambiar_estado_app(AppState.PROCESANDO_RECONOCIMIENTO)
     cambiar_estado_led(LEDState.AMARILLO_SOLIDO)
-    
+    #Publica en topico timbre
     if mqtt_client:
         mqtt_client.publish(TOPIC_TIMBRE, 'ping')
 
@@ -376,7 +378,7 @@ def iniciar_registro():
     if not registro_solicitado_flag:
         print("[APP] No hay registro solicitado, ignorando presión de botón")
         return
-    
+    #Cambio de estado
     print(f"[REGISTRO] Capturando rostro para: {nombre_registro_pendiente}")
     cambiar_estado_app(AppState.REGISTRANDO)
     cambiar_estado_led(LEDState.AZUL_TITILANTE)
@@ -409,8 +411,10 @@ def iniciar_registro():
     try:
         save_embedding(embedding, nombre_registro_pendiente)
         print(f'[REGISTRO] Rostro {nombre_registro_pendiente} registrado exitosamente')
+        #Publica exito en registro
         if mqtt_client:
             mqtt_client.publish(TOPIC_RESPUESTA, json.dumps({'ok': True, 'mensaje': f'Rostro {nombre_registro_pendiente} registrado'}))
+        #Cambio de estado    
         cambiar_estado_app(AppState.ESPERANDO)
         cambiar_estado_led(LEDState.AZUL_SOLIDO)
     except Exception as e:
@@ -423,6 +427,7 @@ def iniciar_registro():
     registro_solicitado_flag = False
     nombre_registro_pendiente = None
 
+#Funcion para cargar los embeddings de archivo embeddings.txt
 def load_embeddings(file_path=EMBED_FILE, names_path=NAMES_FILE):
     embeddings = []
     names = []
@@ -443,19 +448,19 @@ def load_embeddings(file_path=EMBED_FILE, names_path=NAMES_FILE):
                 names.append(line.strip())
     return embeddings, names
 
-
+#Funcion para guardar embeddings en archivo embeddings.txt
 def save_embedding(embedding, nombre, file_path=EMBED_FILE, names_path=NAMES_FILE):
     with open(file_path, 'a', encoding='utf-8') as f:
         f.write(json.dumps(embedding.tolist()) + '\n')
     with open(names_path, 'a', encoding='utf-8') as f:
         f.write(nombre + '\n')
 
-
+#Funcion para capturar imagen de camara.
 def capture_frame(camera_index=0, save_last=True):
     """Captura un frame de la cámara y opcionalmente lo guarda como última imagen"""
     global last_captured_image
     
-    cap = cv2.VideoCapture(camera_index)
+    cap = cv2.VideoCapture(camera_index)    #Uso OpenCV para la captura
     if not cap.isOpened():
         return None, 'No se pudo abrir la cámara'
     ret, frame = cap.read()
@@ -473,10 +478,11 @@ def capture_frame(camera_index=0, save_last=True):
     img = Image.fromarray(frame_rgb)
     return img, None
 
-
+#Funcion a ejecutar cuando nos conectamos al broker MQTT
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print(f'[MQTT] Conectado al broker MQTT {BROKER}:{BROKER_PORT}')
+        #Suscripcion a topicos
         client.subscribe(TOPIC_REGISTRO)
         client.subscribe(TOPIC_TIMBRE)
         client.subscribe(TOPIC_CONFIRMACION)
@@ -496,7 +502,7 @@ def handle_registro(client, payload):
     # payload puede ser JSON {'nombre': 'Mati'} o solo un nombre
     nombre = None
     try:
-        data = json.loads(payload)
+        data = json.loads(payload)    #Intenta parsear como JSON{'nombre':'Mati'}
         nombre = data.get('nombre')
     except Exception:
         nombre = payload.decode() if isinstance(payload, bytes) else str(payload)
@@ -507,10 +513,11 @@ def handle_registro(client, payload):
     
     # Guardar el nombre para cuando se presione el botón
     nombre_registro_pendiente = nombre
-    
+    #Activo flag para saber que estamos en nuevo registro
     registro_solicitado_flag = True
     cambiar_estado_app(AppState.ESPERANDO_REGISTRO)
     cambiar_estado_led(LEDState.AZUL_TITILANTE)
+    #Enviamos instruccion por MQTT
     client.publish(TOPIC_STATUS, f'Presiona el botón físico para registrar rostro de "{nombre}"')
 
 
@@ -521,7 +528,7 @@ def handle_timbre(client):
     print("[TIMBRE] Procesando reconocimiento...")
     cambiar_estado_app(AppState.PROCESANDO_RECONOCIMIENTO)
     cambiar_estado_led(LEDState.AMARILLO_SOLIDO)
-    
+    #Publicamos estado de captura en MQTT
     client.publish(TOPIC_STATUS, 'Evento timbre recibido: capturando')
     img, err = capture_frame()
     
@@ -563,7 +570,8 @@ def handle_timbre(client):
 
     # Cambiar a estado esperando confirmación
     cambiar_estado_app(AppState.ESPERANDO_CONFIRMACION)
-
+    
+    #Si distancia es menor al umbral establecido, se encuentra coincidencia con el embedding.
     if min_dist < umbral:
         nombre = names[idx] if idx < len(names) else f'Persona #{idx+1}'
         # Calcular porcentaje: 0.2 o menos = 100%, 0.8 = 0%
@@ -576,6 +584,7 @@ def handle_timbre(client):
         last_recognized_person = {'nombre': nombre, 'distancia': min_dist}
         # LED amarillo mientras se espera confirmación (similar a rechazado pero diferente)
         cambiar_estado_led(LEDState.AMARILLO_SOLIDO)
+        #Publicamos en MQTT coincidencia encontrada o no encontrada
         client.publish(TOPIC_RESPUESTA, json.dumps({
             'ok': True,
             'mensaje': 'Coincidencia encontrada',
@@ -605,19 +614,21 @@ def handle_confirmacion(client, payload):
     except Exception:
         print("[CONFIRMACION] Error al parsear confirmación")
         return
-    
+    #Si habilitamos acceso por boton, cambia led a verde y se abre la puerta.
     if permitir:
         print("[CONFIRMACION] Acceso PERMITIDO")
         cambiar_estado_led(LEDState.VERDE_10S)
         abrir_puerta()
         client.publish(TOPIC_STATUS, '✅ Acceso permitido - Puerta abierta 10 segundos')
     else:
+    #Si denegamos acceso por boton, cambia led a rojo y se mantiene la puerta cerrada.    
         print("[CONFIRMACION] Acceso DENEGADO")
         cambiar_estado_led(LEDState.ROJO_10S)
         client.publish(TOPIC_STATUS, '❌ Acceso denegado')
-    
+    #Se vuelve a estado esperando
     cambiar_estado_app(AppState.ESPERANDO)
 
+#Funcion a realizar cuando llega un mensaje a un topico MQTT
 def on_message(client, userdata, msg):
     print(f'[MQTT] Mensaje en topic {msg.topic}: {msg.payload}')
     try:
@@ -633,15 +644,16 @@ def on_message(client, userdata, msg):
     except Exception as e:
         print(f'[MQTT] Error al procesar mensaje: {e}')
 
-
+#Funcion principal del programa        
 def main():
+    #Se define cliente MQTT
     client = mqtt.Client()
     client.on_connect = on_connect
     client.on_message = on_message
-
+    #Si el broker tiene usuario y contraseña se define.
     if MQTT_USERNAME:
         mqtt_client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
-        
+    #Nos conectamos al broker    
     try:
         client.connect(BROKER, BROKER_PORT, 60)
     except Exception as e:
@@ -751,7 +763,7 @@ def start_mqtt():
     # Loop MQTT en hilo separado
     mqtt_client.loop_forever()
 
-
+#Programa principal flask
 def main_flask():
     print('[APP] Servicio de reconocimiento iniciando...')
     
