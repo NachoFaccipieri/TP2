@@ -821,25 +821,27 @@
 		(symbol "Connector_Generic:Conn_01x02"
 			(pin_names
 				(offset 1.016)
-				(hide yes)
 			)
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
-			(property "Reference" "J"
-				(at 0 2.54 0)
+			(property "Reference" "BOTON"
+				(at -1.27 2.54 0)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify left)
 				)
 			)
-			(property "Value" "Conn_01x02"
-				(at 0 -5.08 0)
+			(property "Value" "~"
+				(at 2.54 -2.5399 0)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify left)
+					(hide yes)
 				)
 			)
 			(property "Footprint" ""
@@ -890,7 +892,7 @@
 			(symbol "Conn_01x02_1_1"
 				(rectangle
 					(start -1.27 1.27)
-					(end 1.27 -3.81)
+					(end 5.08 -3.81)
 					(stroke
 						(width 0.254)
 						(type default)
@@ -924,7 +926,7 @@
 				(pin passive line
 					(at -5.08 0 0)
 					(length 3.81)
-					(name "Pin_1"
+					(name "GND"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -942,7 +944,7 @@
 				(pin passive line
 					(at -5.08 -2.54 0)
 					(length 3.81)
-					(name "Pin_2"
+					(name "GPIO"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -963,25 +965,26 @@
 		(symbol "Connector_Generic:Conn_01x03"
 			(pin_names
 				(offset 1.016)
-				(hide yes)
 			)
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
-			(property "Reference" "J"
-				(at 0 5.08 0)
+			(property "Reference" "SERVOMOTOR"
+				(at -2.794 5.334 0)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify left)
 				)
 			)
-			(property "Value" "Conn_01x03"
-				(at 0 -5.08 0)
+			(property "Value" "~"
+				(at 2.54 -1.2699 0)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify left)
 				)
 			)
 			(property "Footprint" ""
@@ -1032,7 +1035,7 @@
 			(symbol "Conn_01x03_1_1"
 				(rectangle
 					(start -1.27 3.81)
-					(end 1.27 -3.81)
+					(end 7.62 -3.81)
 					(stroke
 						(width 0.254)
 						(type default)
@@ -1077,7 +1080,7 @@
 				(pin passive line
 					(at -5.08 2.54 0)
 					(length 3.81)
-					(name "Pin_1"
+					(name "5V"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1095,7 +1098,7 @@
 				(pin passive line
 					(at -5.08 0 0)
 					(length 3.81)
-					(name "Pin_2"
+					(name "GND"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1113,7 +1116,7 @@
 				(pin passive line
 					(at -5.08 -2.54 0)
 					(length 3.81)
-					(name "Pin_3"
+					(name "GPIO"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1134,25 +1137,25 @@
 		(symbol "Connector_Generic:Conn_01x04"
 			(pin_names
 				(offset 1.016)
-				(hide yes)
 			)
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
-			(property "Reference" "J"
-				(at 0 5.08 0)
+			(property "Reference" "LED_RGB"
+				(at 7.62 -1.27 90)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 				)
 			)
-			(property "Value" "Conn_01x04"
-				(at 0 -7.62 0)
+			(property "Value" "~"
+				(at 3.81 -1.27 90)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(hide yes)
 				)
 			)
 			(property "Footprint" ""
@@ -1203,7 +1206,7 @@
 			(symbol "Conn_01x04_1_1"
 				(rectangle
 					(start -1.27 3.81)
-					(end 1.27 -6.35)
+					(end 6.35 -6.35)
 					(stroke
 						(width 0.254)
 						(type default)
@@ -1259,7 +1262,7 @@
 				(pin passive line
 					(at -5.08 2.54 0)
 					(length 3.81)
-					(name "Pin_1"
+					(name "Rojo"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1277,7 +1280,7 @@
 				(pin passive line
 					(at -5.08 0 0)
 					(length 3.81)
-					(name "Pin_2"
+					(name "Verde"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1295,7 +1298,7 @@
 				(pin passive line
 					(at -5.08 -2.54 0)
 					(length 3.81)
-					(name "Pin_3"
+					(name "Azul"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1313,7 +1316,7 @@
 				(pin passive line
 					(at -5.08 -5.08 0)
 					(length 3.81)
-					(name "Pin_4"
+					(name "GND"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -3473,7 +3476,7 @@
 	)
 	(wire
 		(pts
-			(xy 181.61 86.36) (xy 181.61 59.69)
+			(xy 181.61 86.36) (xy 181.61 76.2)
 		)
 		(stroke
 			(width 0)
@@ -3503,7 +3506,7 @@
 	)
 	(wire
 		(pts
-			(xy 184.15 83.82) (xy 184.15 59.69)
+			(xy 184.15 83.82) (xy 184.15 76.2)
 		)
 		(stroke
 			(width 0)
@@ -3513,7 +3516,7 @@
 	)
 	(wire
 		(pts
-			(xy 186.69 81.28) (xy 186.69 59.69)
+			(xy 186.69 81.28) (xy 186.69 76.2)
 		)
 		(stroke
 			(width 0)
@@ -3553,7 +3556,7 @@
 	)
 	(wire
 		(pts
-			(xy 210.82 73.66) (xy 220.98 73.66)
+			(xy 210.82 73.66) (xy 218.44 73.66)
 		)
 		(stroke
 			(width 0)
@@ -3583,7 +3586,7 @@
 	)
 	(wire
 		(pts
-			(xy 210.82 76.2) (xy 220.98 76.2)
+			(xy 210.82 76.2) (xy 218.44 76.2)
 		)
 		(stroke
 			(width 0)
@@ -3723,7 +3726,7 @@
 	)
 	(wire
 		(pts
-			(xy 210.82 71.12) (xy 220.98 71.12)
+			(xy 210.82 71.12) (xy 218.44 71.12)
 		)
 		(stroke
 			(width 0)
@@ -3763,7 +3766,7 @@
 	)
 	(wire
 		(pts
-			(xy 189.23 59.69) (xy 189.23 78.74)
+			(xy 189.23 76.2) (xy 189.23 78.74)
 		)
 		(stroke
 			(width 0)
@@ -3833,7 +3836,7 @@
 	)
 	(symbol
 		(lib_id "Connector_Generic:Conn_01x03")
-		(at 226.06 73.66 0)
+		(at 223.52 73.66 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -3842,7 +3845,7 @@
 		(fields_autoplaced yes)
 		(uuid "17dc7a95-e677-47d3-9892-e45bbcb53634")
 		(property "Reference" "SERVOMOTOR"
-			(at 228.6 72.3899 0)
+			(at 220.726 68.326 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3851,7 +3854,7 @@
 			)
 		)
 		(property "Value" "~"
-			(at 228.6 74.9299 0)
+			(at 226.06 74.9299 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3860,7 +3863,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 226.06 73.66 0)
+			(at 223.52 73.66 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3869,7 +3872,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 226.06 73.66 0)
+			(at 223.52 73.66 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3878,7 +3881,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 226.06 73.66 0)
+			(at 223.52 73.66 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3915,7 +3918,7 @@
 		(fields_autoplaced yes)
 		(uuid "36328738-0920-496a-9991-29590bb7b7d7")
 		(property "Reference" "BOTON"
-			(at 228.6 109.2199 0)
+			(at 224.79 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3930,6 +3933,7 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
+				(hide yes)
 			)
 		)
 		(property "Footprint" ""
@@ -4125,10 +4129,9 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "6ad9f942-2fcc-4d29-b5d4-91e080ab6572")
 		(property "Reference" "PINES_RASPBERRY"
-			(at 204.47 62.23 0)
+			(at 204.47 65.278 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4141,6 +4144,7 @@
 				(font
 					(size 1.27 1.27)
 				)
+				(hide yes)
 			)
 		)
 		(property "Footprint" ""
@@ -4485,7 +4489,7 @@
 	)
 	(symbol
 		(lib_id "Connector_Generic:Conn_01x04")
-		(at 184.15 54.61 90)
+		(at 184.15 71.12 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -4494,7 +4498,7 @@
 		(fields_autoplaced yes)
 		(uuid "9984202c-87e0-4fdc-a5e4-61643ef80c25")
 		(property "Reference" "LED_RGB"
-			(at 185.42 48.26 90)
+			(at 185.42 63.5 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4502,15 +4506,16 @@
 			)
 		)
 		(property "Value" "~"
-			(at 185.42 50.8 90)
+			(at 185.42 67.31 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(hide yes)
 			)
 		)
 		(property "Footprint" ""
-			(at 184.15 54.61 0)
+			(at 184.15 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4519,7 +4524,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 184.15 54.61 0)
+			(at 184.15 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4528,7 +4533,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 184.15 54.61 0)
+			(at 184.15 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
