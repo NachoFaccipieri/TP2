@@ -1,12 +1,4 @@
 import os
-# Ajustes para Pi con poca RAM: limitar hilos y reducir logs de TF
-# Deben establecerse antes de importar TensorFlow/keras para que tengan efecto
-#os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '2')
-#os.environ.setdefault('OMP_NUM_THREADS', '1')
-#os.environ.setdefault('MKL_NUM_THREADS', '1')
-#os.environ.setdefault('INTRA_OP_NUM_THREADS', '1')
-#os.environ.setdefault('INTER_OP_NUM_THREADS', '1')
-
 import cv2      # <--- Para la cámara
 import sys      # <--- Para salir limpiamente
 from mtcnn import MTCNN
@@ -90,7 +82,7 @@ class AppState(Enum):
 
 # Variables globales de estado
 current_app_state = AppState.INICIALIZANDO
-current_led_state = LEDState.AMARILLO_TITILANTE
+current_led_state = None
 current_servo_state = ServoState.CERRADO
 led_blink_thread = None
 servo_open_timer = None
@@ -249,8 +241,8 @@ except Exception as e:
     print(f"Error al cargar modelos de TensorFlow: {e}")
     print("Esto probablemente sea un error de falta de memoria (RAM).")
     sys.exit(1)
-
-
+    
+    
 # ============================================================================
 # FUNCIONES DE CONTROL DE SERVO
 # ============================================================================
@@ -309,12 +301,12 @@ def on_boton_presionado():
     
     # Lógica según el estado actual
     if estado_actual == AppState.ESPERANDO:
-        # Inicia reconocimiento de rostro
+        # Inicia reconocimiento
         print("[BOTON] → Iniciando reconocimiento...")
         iniciar_reconocimiento()
     
     elif estado_actual == AppState.ESPERANDO_REGISTRO:
-        # Inicia registro de rostro
+        # Inicia registro
         print("[BOTON] → Iniciando registro...")
         iniciar_registro()
     
@@ -327,10 +319,10 @@ def setup_boton():
     
     print("[BOTON] Inicializando botón en GPIO", PIN_BOTON)
     boton_gpiozero = Button(PIN_BOTON)
-    boton_gpiozero.when_pressed = on_boton_presionado  #Cuando es presionado llama a la función
+    boton_gpiozero.when_pressed = on_boton_presionado
     print("[BOTON] ✅ Botón listo")
 
-def get_embedding_from_pil(img):
+def generarEmbedding(img):
     if img.mode != 'RGB':
         img = img.convert('RGB')
     img_array = np.asarray(img)
@@ -400,7 +392,7 @@ def iniciar_registro():
         return
     
     # Obtener embedding
-    embedding = get_embedding_from_pil(img)
+    embedding = generarEmbedding(img)
     if embedding is None:
         print("[REGISTRO] No se detectó rostro")
         if mqtt_client:
@@ -530,6 +522,8 @@ def handle_timbre(client):
     
     client.publish(TOPIC_STATUS, 'Evento timbre recibido: capturando')
     img, err = capture_frame()
+    
+    # Si existe algún error al capturar
     if err:
         print(f"[TIMBRE] Error de captura: {err}")
         client.publish(TOPIC_RESPUESTA, json.dumps({'ok': False, 'mensaje': err, 'coincidencia': False}))
@@ -537,7 +531,10 @@ def handle_timbre(client):
         cambiar_estado_led(LEDState.AZUL_SOLIDO)
         return
 
-    embedding = get_embedding_from_pil(img)
+    # Se genera el embedding
+    embedding = generarEmbedding(img)
+
+    # Si no se detecta rostro
     if embedding is None:
         print("[TIMBRE] No se detectó rostro")
         client.publish(TOPIC_RESPUESTA, json.dumps({'ok': True, 'mensaje': 'No se detectó rostro', 'coincidencia': False}))
@@ -545,7 +542,9 @@ def handle_timbre(client):
         cambiar_estado_led(LEDState.AZUL_SOLIDO)
         return
 
+    # Se cargan los embeddings almacenados
     stored_embeddings, names = load_embeddings()
+    # Si no hay embeddings almacenados
     if not stored_embeddings:
         print("[TIMBRE] No hay rostros registrados")
         client.publish(TOPIC_RESPUESTA, json.dumps({'ok': True, 'mensaje': 'No hay rostros registrados', 'coincidencia': False}))
@@ -553,17 +552,25 @@ def handle_timbre(client):
         cambiar_estado_led(LEDState.AZUL_SOLIDO)
         return
 
+    # Comparar con los embeddings almacenados
     distancias = [float(np.linalg.norm(embedding - emb)) for emb in stored_embeddings]
     min_dist = min(distancias)
     idx = int(np.argmin(distancias))
     umbral = 0.8  # Umbral de distancia para coincidencia
+    umbral_perfecto = 0.2  # Distancia considerada como 100% de coincidencia
 
     # Cambiar a estado esperando confirmación
     cambiar_estado_app(AppState.ESPERANDO_CONFIRMACION)
 
     if min_dist < umbral:
         nombre = names[idx] if idx < len(names) else f'Persona #{idx+1}'
-        print(f'[TIMBRE] Coincidencia: {nombre} (distancia {min_dist:.4f})')
+        # Calcular porcentaje: 0.2 o menos = 100%, 0.8 = 0%
+        if min_dist <= umbral_perfecto:
+            porcentaje = 100
+        else:
+            porcentaje = int((1 - (min_dist - umbral_perfecto) / (umbral - umbral_perfecto)) * 100)
+        porcentaje = max(0, min(100, porcentaje))  # Asegurar que esté entre 0-100
+        print(f'[TIMBRE] Coincidencia: {nombre} ({porcentaje}% de coincidencia)')
         last_recognized_person = {'nombre': nombre, 'distancia': min_dist}
         # LED amarillo mientras se espera confirmación (similar a rechazado pero diferente)
         cambiar_estado_led(LEDState.AMARILLO_SOLIDO)
@@ -572,7 +579,8 @@ def handle_timbre(client):
             'mensaje': 'Coincidencia encontrada',
             'coincidencia': True,
             'nombre': nombre,
-            'distancia': min_dist
+            'distancia': min_dist,
+            'porcentaje': porcentaje
         }))
     else:
         print(f'[TIMBRE] No coincidencia (min dist {min_dist:.4f})')
