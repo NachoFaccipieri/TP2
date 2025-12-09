@@ -644,13 +644,16 @@ def on_message(client, userdata, msg):
     except Exception as e:
         print(f'[MQTT] Error al procesar mensaje: {e}')
 
-#Main del programa
+#Funcion principal del programa        
 def main():
-    #Definimos cliente MQTT
+    #Se define cliente MQTT
     client = mqtt.Client()
     client.on_connect = on_connect
     client.on_message = on_message
-    #Nos conectamos al broker
+    #Si el broker tiene usuario y contraseña se define.
+    if MQTT_USERNAME:
+        mqtt_client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+    #Nos conectamos al broker    
     try:
         client.connect(BROKER, BROKER_PORT, 60)
     except Exception as e:
@@ -747,6 +750,9 @@ def start_mqtt():
     mqtt_client.on_connect = on_connect
     mqtt_client.on_message = on_message
 
+    if MQTT_USERNAME:
+        mqtt_client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+        
     try:
         mqtt_client.connect(BROKER, BROKER_PORT, 60)
     except Exception as e:
@@ -757,7 +763,7 @@ def start_mqtt():
     # Loop MQTT en hilo separado
     mqtt_client.loop_forever()
 
-
+#Programa principal flask
 def main_flask():
     print('[APP] Servicio de reconocimiento iniciando...')
     
