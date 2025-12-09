@@ -151,7 +151,6 @@ def cambiar_estado_led(nuevo_estado):
             print("[LED] Estado: AZUL SOLIDO")
             
         elif nuevo_estado == LEDState.AMARILLO_TITILANTE:
-            # Amarillo = Rojo + Verde
             if led_blink_thread:
                 # Esperar a que termine el hilo anterior
                 pass
@@ -175,7 +174,7 @@ def cambiar_estado_led(nuevo_estado):
             
         elif nuevo_estado == LEDState.AMARILLO_SOLIDO:
             apagar_todos_leds()
-            set_led(rojo=True, verde=True)  # Amarillo = Rojo + Verde
+            set_led(rojo=True, verde=True)  
             print("[LED] Estado: AMARILLO SOLIDO")
             
         elif nuevo_estado == LEDState.AZUL_TITILANTE:
@@ -250,9 +249,8 @@ def set_servo_angle(angle):
     """Establece el ángulo del servo (0-180 grados)"""
     if not GPIO_INITIALIZED:
         return
-    
-    angle = max(0, min(180, angle))  # Limitar a 0-180
-    # Mapear 0-180° a 5-10% duty cycle
+    #Establecer dutycycle del servo
+    angle = max(0, min(180, angle)) 
     duty = 5 + (angle / 180) * 5
     servo_pwm.ChangeDutyCycle(duty)
     time.sleep(0.5)
@@ -267,7 +265,7 @@ def abrir_puerta():
     
     print("[SERVO] Abriendo puerta...")
     current_servo_state = ServoState.ABIERTO
-    set_servo_angle(180)  # 90 grados = abierto
+    set_servo_angle(180)
     
     # Cancelar timer anterior si existe
     if servo_open_timer:
@@ -314,19 +312,23 @@ def on_boton_presionado():
         print(f"[BOTON] → Estado: {estado_actual.name}, botón ignorado")
 
 def setup_boton():
-    """Configura el evento del botón usando gpiozero (igual que Boton.py)"""
+    """Configura el evento del botón usando gpiozero"""
     global boton_gpiozero
     
     print("[BOTON] Inicializando botón en GPIO", PIN_BOTON)
     boton_gpiozero = Button(PIN_BOTON)
+    #Deteccion cuando se presiona el boton
     boton_gpiozero.when_pressed = on_boton_presionado
     print("[BOTON] ✅ Botón listo")
 
-def generarEmbedding(img):
-    if img.mode != 'RGB':
-        img = img.convert('RGB')
-    img_array = np.asarray(img)
+#Funcion para generar embedding a partir de imagen.
+def generarEmbedding(img):    
+    #Se necesita una imagen RGB y la camara la genera BGR
+    if img.mode != 'RGB':            
+        img = img.convert('RGB')    
+    img_array = np.asarray(img)    #Uso de numpy para transformar a vector.
 
+    #MTCNN busca rostro en la imagen.
     detections = detector.detect_faces(img_array)
     if len(detections) == 0:
         return None
@@ -337,7 +339,7 @@ def generarEmbedding(img):
     face = img_array[y:y+h, x:x+w]
 
     print("Generando embedding...")
-    face = Image.fromarray(face).resize((160, 160))
+    face = Image.fromarray(face).resize((160, 160))    #Reajusta imagen a lo que necesita FaceNet
     face = np.asarray(face)
     face = np.expand_dims(face, axis=0)
     embedding = embedder.embeddings(face)[0]
@@ -360,10 +362,10 @@ def cambiar_estado_app(nuevo_estado):
 def iniciar_reconocimiento():
     """Inicia el proceso de reconocimiento desde el botón físico"""
     global mqtt_client
-    
+    #Cambio de estado
     cambiar_estado_app(AppState.PROCESANDO_RECONOCIMIENTO)
     cambiar_estado_led(LEDState.AMARILLO_SOLIDO)
-    
+    #Publica en topico timbre
     if mqtt_client:
         mqtt_client.publish(TOPIC_TIMBRE, 'ping')
 
@@ -374,7 +376,7 @@ def iniciar_registro():
     if not registro_solicitado_flag:
         print("[APP] No hay registro solicitado, ignorando presión de botón")
         return
-    
+    #Cambio de estado
     print(f"[REGISTRO] Capturando rostro para: {nombre_registro_pendiente}")
     cambiar_estado_app(AppState.REGISTRANDO)
     cambiar_estado_led(LEDState.AZUL_TITILANTE)
@@ -407,8 +409,10 @@ def iniciar_registro():
     try:
         save_embedding(embedding, nombre_registro_pendiente)
         print(f'[REGISTRO] Rostro {nombre_registro_pendiente} registrado exitosamente')
+        #Publica exito en registro
         if mqtt_client:
             mqtt_client.publish(TOPIC_RESPUESTA, json.dumps({'ok': True, 'mensaje': f'Rostro {nombre_registro_pendiente} registrado'}))
+        #Cambio de estado    
         cambiar_estado_app(AppState.ESPERANDO)
         cambiar_estado_led(LEDState.AZUL_SOLIDO)
     except Exception as e:
@@ -421,6 +425,7 @@ def iniciar_registro():
     registro_solicitado_flag = False
     nombre_registro_pendiente = None
 
+#Funcion para cargar los embeddings de archivo embeddings.txt
 def load_embeddings(file_path=EMBED_FILE, names_path=NAMES_FILE):
     embeddings = []
     names = []
@@ -441,19 +446,19 @@ def load_embeddings(file_path=EMBED_FILE, names_path=NAMES_FILE):
                 names.append(line.strip())
     return embeddings, names
 
-
+#Funcion para guardar embeddings en archivo embeddings.txt
 def save_embedding(embedding, nombre, file_path=EMBED_FILE, names_path=NAMES_FILE):
     with open(file_path, 'a', encoding='utf-8') as f:
         f.write(json.dumps(embedding.tolist()) + '\n')
     with open(names_path, 'a', encoding='utf-8') as f:
         f.write(nombre + '\n')
 
-
+#Funcion para capturar imagen de camara.
 def capture_frame(camera_index=0, save_last=True):
     """Captura un frame de la cámara y opcionalmente lo guarda como última imagen"""
     global last_captured_image
     
-    cap = cv2.VideoCapture(camera_index)
+    cap = cv2.VideoCapture(camera_index)    #Uso OpenCV para la captura
     if not cap.isOpened():
         return None, 'No se pudo abrir la cámara'
     ret, frame = cap.read()
@@ -471,10 +476,11 @@ def capture_frame(camera_index=0, save_last=True):
     img = Image.fromarray(frame_rgb)
     return img, None
 
-
+#Funcion a ejecutar cuando nos conectamos al broker MQTT
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print(f'[MQTT] Conectado al broker MQTT {BROKER}:{BROKER_PORT}')
+        #Suscripcion a topicos
         client.subscribe(TOPIC_REGISTRO)
         client.subscribe(TOPIC_TIMBRE)
         client.subscribe(TOPIC_CONFIRMACION)
