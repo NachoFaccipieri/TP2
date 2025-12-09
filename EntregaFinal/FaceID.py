@@ -1,20 +1,19 @@
 import os
-import cv2      # <--- Para la cámara
-import sys      # <--- Para salir limpiamente
-from mtcnn import MTCNN
-from keras_facenet import FaceNet
-import numpy as np
-from PIL import Image
+import cv2      #Para capturar imagen
+import sys                  
+from mtcnn import MTCNN    #Para detectar rostro dentro de imagen 
+from keras_facenet import FaceNet    #Modelo de reconocimiento
+import numpy as np        #Operaciones con vectores
+from PIL import Image     #Normalizacion L2   
 import json
-import os
-import threading
-import paho.mqtt.client as mqtt
-import time
-import io
-import base64
-import RPi.GPIO as GPIO
+import threading          #Para crear hilos.  
+import paho.mqtt.client as mqtt    #Libreria asociado a MQTT
+import time               #Implementar delays
+import io                
+import base64              #Codificacion de imagenes
+import RPi.GPIO as GPIO    #Para funcionalidades GPIO
 from enum import Enum
-from gpiozero import Button
+from gpiozero import Button    #Para funcionalides del pulsador
 
 # Flask imports
 from flask import Flask, send_from_directory, jsonify, Response, send_file
@@ -46,7 +45,7 @@ try:
     GPIO.setup(PIN_SERVO, GPIO.OUT)
     servo_pwm = GPIO.PWM(PIN_SERVO, 50)
     servo_pwm.start(0)
-    
+    #Inicializacion de GPIO
     GPIO_INITIALIZED = True
     print("[GPIO] Inicialización exitosa - Servo OK")
 except Exception as e:
@@ -58,12 +57,12 @@ except Exception as e:
 # MÁQUINA DE ESTADOS - LED
 # ============================================================================
 class LEDState(Enum):
-    AMARILLO_TITILANTE = 1  # Startup/procesando registro
+    AMARILLO_TITILANTE = 1  # Inicializando/procesando registro
     AZUL_SOLIDO = 2          # Listo
     VERDE_10S = 3            # Acceso permitido (10 segundos)
     ROJO_10S = 4             # Acceso denegado (10 segundos)
     AMARILLO_SOLIDO = 5      # Procesando reconocimiento
-    AZUL_TITILANTE = 6       # Registrando (titilante)
+    AZUL_TITILANTE = 6       # Registrando
 
 class ServoState(Enum):
     CERRADO = 0
@@ -81,20 +80,21 @@ class AppState(Enum):
     REGISTRANDO = 5
 
 # Variables globales de estado
-current_app_state = AppState.INICIALIZANDO
-current_led_state = None
-current_servo_state = ServoState.CERRADO
-led_blink_thread = None
-servo_open_timer = None
-led_state_lock = threading.Lock()
-app_state_lock = threading.Lock()
-registro_solicitado_flag = False
-nombre_registro_pendiente = None  # Nombre del próximo registro a capturar
-boton_gpiozero = None  # Se inicializa en setup_boton()
+current_app_state = AppState.INICIALIZANDO    #Estado actual de la app
+current_led_state = None                      #Estado actual del led
+current_servo_state = ServoState.CERRADO      #Estado actual del servo
+led_blink_thread = None                       #Hilo para el parpadeo del led
+servo_open_timer = None                       #Timer para cerrar el servo. 
+led_state_lock = threading.Lock()             #Evita que dos hilos cambien el led al mismo tiempo 
+app_state_lock = threading.Lock()             #Evita conflictos al cambiar de estados   
+registro_solicitado_flag = False              #Variable para indicar que se solicita un registro de rostro
+nombre_registro_pendiente = None              # Nombre del próximo registro a capturar
+boton_gpiozero = None                         # Se inicializa en setup_boton()
 
-# Config
+# Configuracion del Broker.
 BROKER = os.environ.get('MQTT_BROKER', 'localhost')
 BROKER_PORT = int(os.environ.get('MQTT_PORT', '1883'))
+#Topicos
 TOPIC_REGISTRO = os.environ.get('TOPIC_REGISTRO', 'cerradura/registro')
 TOPIC_TIMBRE = os.environ.get('TOPIC_TIMBRE', 'cerradura/timbre')
 TOPIC_RESPUESTA = os.environ.get('TOPIC_RESPUESTA', 'cerradura/persona')
