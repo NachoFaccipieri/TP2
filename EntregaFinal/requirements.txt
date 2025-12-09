@@ -1,0 +1,23 @@
+# --- Reconocimiento y Visión ---
+tensorflow==2.20.0
+keras==3.11.3
+keras-facenet==0.3.2
+mtcnn==1.0.0
+numpy==2.2.6
+pillow==11.3.0
+scipy==1.16.2
+
+# --- Cámara y Procesamiento de Imagen ---
+# Usamos headless para evitar errores de interfaz gráfica en servidor
+opencv-python-headless==4.12.0.88
+
+# --- Servidor Web y Comunicacion ---
+Flask==3.1.2
+flask-cors==6.0.1
+paho-mqtt==1.6.1
+
+# --- Hardware (GPIO) ---
+RPi.GPIO==0.7.1
+gpiozero==2.0.1
+pigpio==1.78
+rpi-lgpio==0.6
