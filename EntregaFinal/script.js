@@ -1,6 +1,4 @@
-// MQTT over WebSockets front-end
 // Usa mqtt.js (incluido en index.html). Requiere que el broker tenga WebSockets habilitados (ej. Mosquitto en puerto 9001).
-
 const STATUS_EL = document.getElementById('status');
 const PERSON_INFO = document.getElementById('person-info');
 const NAME_EL = document.getElementById('name');
@@ -17,7 +15,7 @@ function resetUI() {
   setStatus('Esperando evento...');
   PERSON_INFO.classList.add('hidden');
 }
-
+//funcion cuando llega mensaje a topico MQTT
 function onMessage(topic, payload) {
   // payload puede ser JSON o texto
   let msg = null;
@@ -50,19 +48,19 @@ function onMessage(topic, payload) {
     // Mostrar la imagen capturada siempre
     document.getElementById('camera-preview').classList.remove('hidden');
     refreshCamera();
-
+    //mensaje a mostrar en caso de coincidencia en rostro
     if (msg.coincidencia) {
       setStatus(`✅ Coincidencia con ${msg.nombre}: ${msg.porcentaje}%`);
       NAME_EL.innerText = `Nombre: ${msg.nombre}`;
       CONF_EL.innerText = `Coincidencia: ${msg.porcentaje}%`;
       PERSON_INFO.classList.remove('hidden');
-    } else {
+    } else {            //mensaje a mostrar en caso de no coincidencia
       setStatus(`❌ No se encontró coincidencia`);
       PERSON_INFO.classList.add('hidden');
     }
   }
 }
-
+//funcion para conectarnos a broker MQTT
 function connectMqtt() {
   const host = location.hostname || 'localhost';
   // Conectar directamente al broker MQTT WebSocket (puerto 9001 por defecto)
@@ -71,36 +69,33 @@ function connectMqtt() {
   const brokerUrl = `${protocol}://${host}:${wsPort}`;
 
   setStatus(`Conectando a broker MQTT en ${brokerUrl}...`);
-
-  // Construir opciones MQTT a partir de configuración global (si existe)
-  // window.MQTT_CONFIG puede definirse en index.html. Ej:
-  // <script>window.MQTT_CONFIG = { username: 'miuser', password: 'miclave' }</script>
+  //periodo de reconexion
   const baseOptions = { reconnectPeriod: 3000 };
   const mqttConfig = (window && window.MQTT_CONFIG) ? window.MQTT_CONFIG : {};
   const options = Object.assign({}, baseOptions, mqttConfig);
-
+  //creamos cliente mqtt
   try {
     client = mqtt.connect(brokerUrl, options);
   } catch (e) {
     setStatus('Error al crear cliente MQTT: ' + e);
     return;
   }
-
+  //conexion con cliente mqtt
   client.on('connect', () => {
     setStatus('Conectado al broker MQTT');
     // subscribir topics
     client.subscribe('cerradura/persona');
     client.subscribe('cerradura/status');
   });
-
+  //funcion a ejecutar cuando se recibe un mensaje en los topicos suscriptos
   client.on('message', (topic, message) => {
     onMessage(topic, message);
   });
-
+  
   client.on('error', (err) => {
     setStatus('Error MQTT: ' + err);
   });
-
+  //cerrar conexion mqtt
   client.on('close', () => {
     setStatus('Conexión MQTT cerrada');
     // intentar reconectar en 3s
@@ -119,7 +114,7 @@ function registrarNuevoRostro() {
   
   // Marcar que se solicita registro
   registroSolicitado = true;
-  
+  //publicar mensaje
   const payload = JSON.stringify({ nombre });
   client.publish('cerradura/registro', payload);
   setStatus(`Esperando... Presiona el botón físico para registrar a "${nombre}"`);
@@ -144,9 +139,6 @@ document.getElementById('deny').addEventListener('click', () => {
 
 document.getElementById('register-face').addEventListener('click', registrarNuevoRostro);
 
-// Nota: El botón "Tocar timbre" se ha reemplazado por el botón físico en la Raspberry Pi
-// Ya no es necesario un botón en la web para iniciar el reconocimiento
-
 // Actualizar imagen de la cámara
 function refreshCamera() {
   const img = document.getElementById('camera-feed');
@@ -155,9 +147,8 @@ function refreshCamera() {
   img.src = `/api/camera/last?t=${timestamp}`;
 }
 
-//document.getElementById('refresh-camera').addEventListener('click', refreshCamera);
 
-// Auto-refrescar la imagen cada 10 segundos (solo si el panel de cámara está visible)
+// Auto-refrescar la imagen
 setInterval(() => {
   const cameraPreview = document.getElementById('camera-preview');
   if (!cameraPreview.classList.contains('hidden')) {
