@@ -94,6 +94,8 @@ boton_gpiozero = None                         # Se inicializa en setup_boton()
 # Configuracion del Broker.
 BROKER = os.environ.get('MQTT_BROKER', 'localhost')
 BROKER_PORT = int(os.environ.get('MQTT_PORT', '1883'))
+MQTT_USERNAME = os.environ.get('MQTT_USERNAME','grupoa3b')
+MQTT_PASSWORD = os.environ.get('MQTT_PASSWORD','grupoa3b')
 #Topicos
 TOPIC_REGISTRO = os.environ.get('TOPIC_REGISTRO', 'cerradura/registro')
 TOPIC_TIMBRE = os.environ.get('TOPIC_TIMBRE', 'cerradura/timbre')
