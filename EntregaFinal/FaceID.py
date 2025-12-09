@@ -500,7 +500,7 @@ def handle_registro(client, payload):
     # payload puede ser JSON {'nombre': 'Mati'} o solo un nombre
     nombre = None
     try:
-        data = json.loads(payload)
+        data = json.loads(payload)    #Intenta parsear como JSON{'nombre':'Mati'}
         nombre = data.get('nombre')
     except Exception:
         nombre = payload.decode() if isinstance(payload, bytes) else str(payload)
@@ -511,10 +511,11 @@ def handle_registro(client, payload):
     
     # Guardar el nombre para cuando se presione el botón
     nombre_registro_pendiente = nombre
-    
+    #Activo flag para saber que estamos en nuevo registro
     registro_solicitado_flag = True
     cambiar_estado_app(AppState.ESPERANDO_REGISTRO)
     cambiar_estado_led(LEDState.AZUL_TITILANTE)
+    #Enviamos instruccion por MQTT
     client.publish(TOPIC_STATUS, f'Presiona el botón físico para registrar rostro de "{nombre}"')
 
 
@@ -525,7 +526,7 @@ def handle_timbre(client):
     print("[TIMBRE] Procesando reconocimiento...")
     cambiar_estado_app(AppState.PROCESANDO_RECONOCIMIENTO)
     cambiar_estado_led(LEDState.AMARILLO_SOLIDO)
-    
+    #Publicamos estado de captura en MQTT
     client.publish(TOPIC_STATUS, 'Evento timbre recibido: capturando')
     img, err = capture_frame()
     
@@ -567,7 +568,8 @@ def handle_timbre(client):
 
     # Cambiar a estado esperando confirmación
     cambiar_estado_app(AppState.ESPERANDO_CONFIRMACION)
-
+    
+    #Si distancia es menor al umbral establecido, se encuentra coincidencia con el embedding.
     if min_dist < umbral:
         nombre = names[idx] if idx < len(names) else f'Persona #{idx+1}'
         # Calcular porcentaje: 0.2 o menos = 100%, 0.8 = 0%
@@ -580,6 +582,7 @@ def handle_timbre(client):
         last_recognized_person = {'nombre': nombre, 'distancia': min_dist}
         # LED amarillo mientras se espera confirmación (similar a rechazado pero diferente)
         cambiar_estado_led(LEDState.AMARILLO_SOLIDO)
+        #Publicamos en MQTT coincidencia encontrada o no encontrada
         client.publish(TOPIC_RESPUESTA, json.dumps({
             'ok': True,
             'mensaje': 'Coincidencia encontrada',
@@ -609,19 +612,21 @@ def handle_confirmacion(client, payload):
     except Exception:
         print("[CONFIRMACION] Error al parsear confirmación")
         return
-    
+    #Si habilitamos acceso por boton, cambia led a verde y se abre la puerta.
     if permitir:
         print("[CONFIRMACION] Acceso PERMITIDO")
         cambiar_estado_led(LEDState.VERDE_10S)
         abrir_puerta()
         client.publish(TOPIC_STATUS, '✅ Acceso permitido - Puerta abierta 10 segundos')
     else:
+    #Si denegamos acceso por boton, cambia led a rojo y se mantiene la puerta cerrada.    
         print("[CONFIRMACION] Acceso DENEGADO")
         cambiar_estado_led(LEDState.ROJO_10S)
         client.publish(TOPIC_STATUS, '❌ Acceso denegado')
-    
+    #Se vuelve a estado esperando
     cambiar_estado_app(AppState.ESPERANDO)
 
+#Funcion a realizar cuando llega un mensaje a un topico MQTT
 def on_message(client, userdata, msg):
     print(f'[MQTT] Mensaje en topic {msg.topic}: {msg.payload}')
     try:
@@ -637,12 +642,13 @@ def on_message(client, userdata, msg):
     except Exception as e:
         print(f'[MQTT] Error al procesar mensaje: {e}')
 
-
+#Main del programa
 def main():
+    #Definimos cliente MQTT
     client = mqtt.Client()
     client.on_connect = on_connect
     client.on_message = on_message
-
+    #Nos conectamos al broker
     try:
         client.connect(BROKER, BROKER_PORT, 60)
     except Exception as e:
