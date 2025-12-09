@@ -29,6 +29,15 @@ function onMessage(topic, payload) {
 
   if (topic === 'cerradura/status') {
     setStatus(`ℹ️ ${msg}`);
+    
+    // Detectar si es un mensaje de rostro registrado
+    if (msg.includes('registrado') || msg.includes('Rostro')) {
+      setStatus(`✅ Rostro registrado correctamente`);
+      // Limpiar después de 5 segundos
+      setTimeout(() => {
+        resetUI();
+      }, 5000);
+    }
     return;
   }
 
